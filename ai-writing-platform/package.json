@@ -1,0 +1,33 @@
+{
+  "name": "ai-writing-platform",
+  "version": "1.0.0",
+  "description": "AI-powered writing tools platform with subscription billing",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js",
+    "setup": "node scripts/setup.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.0",
+    "@stripe/stripe-js": "^2.2.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "next": "14.0.4",
+    "openai": "^4.24.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "stripe": "^14.10.0",
+    "cookie": "^0.6.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "prisma": "^5.7.0",
+    "tailwindcss": "^3.4.0"
+  }
+}
