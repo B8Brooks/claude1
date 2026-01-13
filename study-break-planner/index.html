@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Break Planner - Student Advisor Simulation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Title Screen -->
+        <div id="screen-title" class="screen active">
+            <div class="title-container">
+                <h1>📚 Study Break Planner</h1>
+                <p class="subtitle">A Student Advisor Simulation</p>
+                <div class="title-description">
+                    <p>Take on the role of a first-year student advisor planning weekly study breaks.</p>
+                    <p>Manage your budget, time, and energy to create memorable events!</p>
+                </div>
+                <div class="title-buttons">
+                    <button id="btn-new-game" class="btn btn-primary">New Game</button>
+                    <button id="btn-continue" class="btn btn-secondary" disabled>Continue Game</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Planning Screen -->
+        <div id="screen-planning" class="screen">
+            <header class="game-header">
+                <div class="week-indicator">
+                    <span class="week-label">Week</span>
+                    <span id="current-week" class="week-number">1</span>
+                    <span class="week-total">/ 12</span>
+                </div>
+                <div class="semester-phase" id="semester-phase">Early Semester</div>
+                <div class="reputation-display">
+                    <span class="reputation-label">Reputation:</span>
+                    <span id="reputation-status" class="reputation-status">Unknown newcomer</span>
+                </div>
+            </header>
+
+            <!-- Resource Panel -->
+            <section class="resource-panel">
+                <h2>Available Resources</h2>
+                <div class="resources-grid">
+                    <div class="resource-card budget">
+                        <div class="resource-icon">💰</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Budget</span>
+                            <div class="resource-bar-container">
+                                <div class="resource-bar" id="budget-bar"></div>
+                            </div>
+                            <span class="resource-value">$<span id="budget-current">150</span> / $<span id="budget-max">200</span></span>
+                        </div>
+                    </div>
+                    <div class="resource-card time">
+                        <div class="resource-icon">⏰</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Planning Time</span>
+                            <div class="resource-bar-container">
+                                <div class="resource-bar" id="time-bar"></div>
+                            </div>
+                            <span class="resource-value"><span id="time-current">8</span> / 8 hours</span>
+                        </div>
+                    </div>
+                    <div class="resource-card energy">
+                        <div class="resource-icon">⚡</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Energy</span>
+                            <div class="resource-bar-container">
+                                <div class="resource-bar" id="energy-bar"></div>
+                            </div>
+                            <span class="resource-value"><span id="energy-current">10</span> / 10 points</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Event Planning -->
+            <section class="planning-section">
+                <h2>Plan Your Study Break Event</h2>
+
+                <!-- Event Type Selection -->
+                <div class="planning-category">
+                    <h3>Event Type</h3>
+                    <div class="event-types-grid" id="event-types">
+                        <!-- Event type cards will be rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Venue Selection -->
+                <div class="planning-category">
+                    <h3>Venue</h3>
+                    <div class="venue-options" id="venue-options">
+                        <!-- Venue cards will be rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Food Budget Slider -->
+                <div class="planning-category">
+                    <h3>Food & Refreshments</h3>
+                    <div class="slider-container">
+                        <input type="range" id="food-slider" min="0" max="100" value="30">
+                        <div class="slider-labels">
+                            <span>Basic ($<span id="food-min">0</span>)</span>
+                            <span class="slider-value">$<span id="food-current">30</span></span>
+                            <span>Premium ($<span id="food-max">100</span>)</span>
+                        </div>
+                        <p class="slider-description" id="food-description">Decent snacks and drinks</p>
+                    </div>
+                </div>
+
+                <!-- Promotion Time Slider -->
+                <div class="planning-category">
+                    <h3>Promotion Effort</h3>
+                    <div class="slider-container">
+                        <input type="range" id="promotion-slider" min="0" max="5" value="2">
+                        <div class="slider-labels">
+                            <span>Minimal (0h)</span>
+                            <span class="slider-value"><span id="promotion-current">2</span> hours</span>
+                            <span>Maximum (5h)</span>
+                        </div>
+                        <p class="slider-description" id="promotion-description">Posters and some social media</p>
+                    </div>
+                </div>
+
+                <!-- Personal Touches -->
+                <div class="planning-category">
+                    <h3>Personal Touches</h3>
+                    <div class="slider-container">
+                        <input type="range" id="personal-slider" min="0" max="4" value="1">
+                        <div class="slider-labels">
+                            <span>None (0)</span>
+                            <span class="slider-value"><span id="personal-current">1</span> point</span>
+                            <span>Maximum (4)</span>
+                        </div>
+                        <p class="slider-description" id="personal-description">Remember a few names</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cost Summary -->
+            <section class="cost-summary">
+                <h2>Event Summary</h2>
+                <div class="cost-breakdown">
+                    <div class="cost-row">
+                        <span>Budget Cost:</span>
+                        <span id="total-budget-cost">$0</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Time Required:</span>
+                        <span id="total-time-cost">0 hours</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Energy Required:</span>
+                        <span id="total-energy-cost">0 points</span>
+                    </div>
+                </div>
+                <div class="cost-warnings" id="cost-warnings"></div>
+                <button id="btn-plan-event" class="btn btn-primary btn-large">Plan Event</button>
+            </section>
+        </div>
+
+        <!-- Random Event Screen -->
+        <div id="screen-random-event" class="screen">
+            <div class="random-event-container">
+                <div class="random-event-icon" id="random-event-icon">⚠️</div>
+                <h2 id="random-event-title">Random Event!</h2>
+                <p id="random-event-description" class="random-event-description"></p>
+                <div class="random-event-choices" id="random-event-choices">
+                    <!-- Choices rendered by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Results Screen -->
+        <div id="screen-results" class="screen">
+            <div class="results-container">
+                <h2>Event Complete!</h2>
+
+                <div class="results-visual">
+                    <div class="attendees-animation" id="attendees-animation">
+                        <!-- Animated attendee icons -->
+                    </div>
+                </div>
+
+                <div class="results-stats">
+                    <div class="stat-card attendance">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Attendance</span>
+                            <span class="stat-value" id="result-attendance">0</span>
+                            <span class="stat-detail" id="result-attendance-detail">students</span>
+                        </div>
+                    </div>
+                    <div class="stat-card happiness">
+                        <div class="stat-icon">😊</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Happiness</span>
+                            <span class="stat-value" id="result-happiness">0</span>
+                            <span class="stat-detail">/ 100</span>
+                        </div>
+                    </div>
+                    <div class="stat-card reputation-change">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Reputation</span>
+                            <span class="stat-value" id="result-reputation-change">+0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event-highlights">
+                    <h3>Event Highlights</h3>
+                    <ul id="event-highlights-list">
+                        <!-- Generated highlights -->
+                    </ul>
+                </div>
+
+                <div class="results-summary" id="results-summary">
+                    <!-- Summary text -->
+                </div>
+
+                <button id="btn-next-week" class="btn btn-primary btn-large">Continue to Next Week</button>
+            </div>
+        </div>
+
+        <!-- Semester Summary Screen -->
+        <div id="screen-semester-end" class="screen">
+            <div class="semester-summary-container">
+                <h2>Semester Complete!</h2>
+
+                <div class="final-score-display">
+                    <div class="final-score-label">Final Score</div>
+                    <div class="final-score-value" id="final-score">0</div>
+                    <div class="final-rating" id="final-rating">Novice Advisor</div>
+                </div>
+
+                <div class="semester-stats">
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Total Attendance</span>
+                        <span class="semester-stat-value" id="total-attendance">0</span>
+                    </div>
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Average Happiness</span>
+                        <span class="semester-stat-value" id="avg-happiness">0</span>
+                    </div>
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Regulars Built</span>
+                        <span class="semester-stat-value" id="total-regulars">0</span>
+                    </div>
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Best Event</span>
+                        <span class="semester-stat-value" id="best-event">-</span>
+                    </div>
+                </div>
+
+                <div class="week-history">
+                    <h3>Semester Timeline</h3>
+                    <div class="week-history-grid" id="week-history-grid">
+                        <!-- Week cards -->
+                    </div>
+                </div>
+
+                <div class="end-buttons">
+                    <button id="btn-play-again" class="btn btn-primary">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script src="ui.js"></script>
+</body>
+</html>
