@@ -137,7 +137,9 @@ body {
 .venue-icon { font-size: 1.5rem; }
 .venue-name { font-weight: 600; font-size: 0.9rem; }
 .venue-details { font-size: 0.8rem; color: var(--text-medium); }
+.venue-distance { font-size: 0.75rem; color: var(--text-light); margin-top: var(--spacing-xs); }
 .venue-warning { font-size: 0.75rem; color: var(--warning); margin-top: var(--spacing-xs); }
+.venue-bonus { font-size: 0.75rem; color: var(--success); margin-top: var(--spacing-xs); }
 .slider-container { padding: var(--spacing-sm) 0; }
 .slider-container input[type="range"] { width: 100%; height: 8px; border-radius: var(--radius-sm); background: #DDD; outline: none; -webkit-appearance: none; margin-bottom: var(--spacing-sm); }
 .slider-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: var(--shadow-sm); }
@@ -499,9 +501,14 @@ const EVENT_TYPES = {
 };
 
 const VENUES = {
-    common_room: { id: 'common_room', name: 'Common Room', icon: '🏠', cost: 0, capacity: 15, vibeBonus: 0, weatherRisk: false },
-    reserved_lounge: { id: 'reserved_lounge', name: 'Reserved Lounge', icon: '🛋️', cost: 25, capacity: 25, vibeBonus: 10, weatherRisk: false },
-    outdoor_quad: { id: 'outdoor_quad', name: 'Outdoor Quad', icon: '🌳', cost: 0, capacity: 30, vibeBonus: 5, weatherRisk: true }
+    // distance: 0 = in-building, 1 = short walk, 2 = far walk
+    // noveltyBonus: excitement from going somewhere new
+    // staleRate: how quickly it gets boring with repeated use (0 = never stale)
+    common_room: { id: 'common_room', name: 'Common Room', icon: '🏠', cost: 0, capacity: 15, vibeBonus: 0, weatherRisk: false, distance: 0, noveltyBonus: 0, staleRate: 8 },
+    campus_cafe: { id: 'campus_cafe', name: 'Campus Cafe', icon: '☕', cost: 20, capacity: 20, vibeBonus: 8, weatherRisk: false, distance: 1, noveltyBonus: 10, staleRate: 3 },
+    outdoor_quad: { id: 'outdoor_quad', name: 'Outdoor Quad', icon: '🌳', cost: 0, capacity: 25, vibeBonus: 5, weatherRisk: true, distance: 1, noveltyBonus: 8, staleRate: 2 },
+    student_union: { id: 'student_union', name: 'Student Union', icon: '🏛️', cost: 35, capacity: 30, vibeBonus: 12, weatherRisk: false, distance: 2, noveltyBonus: 15, staleRate: 0 },
+    off_campus_park: { id: 'off_campus_park', name: 'Off-Campus Park', icon: '🏞️', cost: 0, capacity: 30, vibeBonus: 10, weatherRisk: true, distance: 2, noveltyBonus: 18, staleRate: 0 }
 };
 
 // ========== CHALLENGES (Resource Trade-offs) ==========
@@ -609,6 +616,8 @@ function newGame() {
         // Personas: 2 revealed at start, rest hidden
         revealedPersonas: ['social_butterfly', 'foodie'],
         weekCrowd: [], // Generated each week
+        // Track venue usage for staleness (counts per venue)
+        venueUsage: { common_room: 0, campus_cafe: 0, outdoor_quad: 0, student_union: 0, off_campus_park: 0 },
         history: [], totalAttendance: 0, totalHappiness: 0, endedZeroEnergy: false
     };
     generateWeekCrowd();
@@ -711,13 +720,20 @@ function calcAttendance(mods = {}) {
     base *= ph.demand;
     if (ev.stressRelief && (ph.name === 'Midterms' || ph.name === 'Finals')) base *= 1.2;
     base += G.regulars * 0.5;
+
+    // Distance penalty - some students won't walk far
+    // distance 0 = no drop, 1 = 10% drop, 2 = 25% drop
+    const distanceMult = ve.distance === 0 ? 1.0 : (ve.distance === 1 ? 0.9 : 0.75);
+    base *= distanceMult;
+
     if (mods.attendance) base *= mods.attendance;
     if (mods.venueCapacity) base = Math.min(base, ve.capacity * (1 + mods.venueCapacity));
     base *= 0.85 + Math.random() * 0.3;
     // Cap at building capacity
     let final = Math.round(Math.min(base, CONFIG.BUILDING_STUDENTS));
     final = Math.max(final, 2);
-    return { count: final, pct: Math.round(final / CONFIG.BUILDING_STUDENTS * 100), crowded: final > ve.capacity * 1.2, ratio: final / ve.capacity, cap: ve.capacity };
+    const distanceDrop = ve.distance > 0;
+    return { count: final, pct: Math.round(final / CONFIG.BUILDING_STUDENTS * 100), crowded: final > ve.capacity * 1.2, ratio: final / ve.capacity, cap: ve.capacity, distanceDrop };
 }
 
 function calcHappiness(att, mods = {}) {
@@ -737,6 +753,30 @@ function calcHappiness(att, mods = {}) {
     // Venue vibe
     h += ve.vibeBonus;
     if (ve.vibeBonus >= 10) highlights.push({ text: 'Great venue atmosphere!', positive: true });
+
+    // Venue staleness - common room gets boring if used too much
+    const usage = G.venueUsage ? (G.venueUsage[G.selectedVenue] || 0) : 0;
+    const stalePenalty = Math.min(20, usage * ve.staleRate);
+    if (stalePenalty > 0) {
+        h -= stalePenalty;
+        if (stalePenalty >= 12) highlights.push({ text: 'Same old venue... students bored.', positive: false });
+        else if (stalePenalty >= 6) highlights.push({ text: 'Venue feels a bit stale.', positive: false });
+    }
+
+    // Novelty bonus for going somewhere different
+    if (ve.noveltyBonus > 0 && usage === 0) {
+        h += ve.noveltyBonus;
+        highlights.push({ text: 'Exciting new location!', positive: true });
+    } else if (ve.noveltyBonus > 0) {
+        // Partial novelty bonus even for revisited off-site venues
+        h += Math.round(ve.noveltyBonus * 0.4);
+    }
+
+    // Distance tradeoff - those who came are more committed
+    if (att.distanceDrop && ve.distance === 2) {
+        h += 5;
+        highlights.push({ text: 'Committed crowd made the trek!', positive: true });
+    }
 
     // Personal touches
     h += PERSONAL_LEVELS[G.personal].bonus;
@@ -816,6 +856,10 @@ function executeEvent(mods = {}) {
     G.totalAttendance += att.count;
     G.totalHappiness += hap.score;
     G.endedZeroEnergy = G.energy <= 0;
+
+    // Track venue usage for staleness mechanic
+    if (!G.venueUsage) G.venueUsage = {};
+    G.venueUsage[G.selectedVenue] = (G.venueUsage[G.selectedVenue] || 0) + 1;
 
     G.history.push({ week: G.week, event: G.selectedEvent, venue: G.selectedVenue, att: att.count, hap: hap.score, rep: rep.change });
     save();
@@ -984,10 +1028,29 @@ function renderVenues() {
     Object.values(VENUES).forEach(ve => {
         const card = document.createElement('div');
         card.className = 'venue-card' + (G.selectedVenue === ve.id ? ' selected' : '');
+
+        // Distance labels
+        const distanceLabels = ['In building', 'Short walk', 'Far walk'];
+        const distanceText = distanceLabels[ve.distance] || '';
+
+        // Staleness warning
+        const usage = G.venueUsage ? (G.venueUsage[ve.id] || 0) : 0;
+        const stalePenalty = usage * ve.staleRate;
+        let staleWarning = '';
+        if (stalePenalty >= 12) staleWarning = '<div class="venue-warning">😴 Getting stale</div>';
+        else if (stalePenalty >= 6) staleWarning = '<div class="venue-warning">😐 Familiar</div>';
+
+        // Novelty indicator for unvisited off-site venues
+        let noveltyHint = '';
+        if (ve.noveltyBonus > 0 && usage === 0) noveltyHint = '<div class="venue-bonus">✨ New & exciting!</div>';
+
         card.innerHTML = `
             <div class="venue-header"><span class="venue-icon">${ve.icon}</span><span class="venue-name">${ve.name}</span></div>
             <div class="venue-details">${ve.cost > 0 ? '$' + ve.cost : 'Free'} | Cap: ${ve.capacity}</div>
+            <div class="venue-distance">${distanceText}${ve.distance > 0 ? ' (some may skip)' : ''}</div>
             ${ve.weatherRisk ? '<div class="venue-warning">⚠️ Weather risk</div>' : ''}
+            ${staleWarning}
+            ${noveltyHint}
         `;
         card.onclick = () => { G.selectedVenue = ve.id; renderPlanning(); };
         container.appendChild(card);
