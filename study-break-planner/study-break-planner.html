@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Break Planner - Student Advisor Simulation</title>
+    <style>
+/* Study Break Planner - Styles */
+/* A friendly, approachable college campus aesthetic */
+
+:root {
+    --primary: #5B8C5A;
+    --primary-dark: #3D5C3C;
+    --primary-light: #7FB77E;
+    --secondary: #E8985E;
+    --secondary-light: #F4B183;
+    --accent: #6B5B95;
+    --accent-light: #9B8DC2;
+    --bg-dark: #2C3E50;
+    --bg-medium: #34495E;
+    --bg-light: #F5F5DC;
+    --bg-card: #FFFFFF;
+    --text-dark: #2C3E50;
+    --text-medium: #5D6D7E;
+    --text-light: #95A5A6;
+    --budget-color: #27AE60;
+    --time-color: #3498DB;
+    --energy-color: #F39C12;
+    --success: #27AE60;
+    --warning: #F39C12;
+    --danger: #E74C3C;
+    --info: #3498DB;
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-light) 0%, #E8E4D9 100%);
+    min-height: 100vh;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+#app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+    min-height: 100vh;
+}
+
+.screen { display: none; animation: fadeIn 0.3s ease; }
+.screen.active { display: block; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.title-container {
+    text-align: center;
+    padding: var(--spacing-xl) var(--spacing-md);
+    margin-top: 10vh;
+}
+
+.title-container h1 {
+    font-size: 2.5rem;
+    color: var(--primary-dark);
+    margin-bottom: var(--spacing-sm);
+    text-shadow: 2px 2px 0 rgba(255,255,255,0.8);
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: var(--text-medium);
+    margin-bottom: var(--spacing-xl);
+}
+
+.title-description {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.title-description p {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-medium);
+}
+
+.title-description p:last-child { margin-bottom: 0; }
+
+.title-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.btn {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active:not(:disabled) { transform: translateY(0); }
+
+.btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-dark);
+    border: 2px solid var(--primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--primary-light);
+    color: white;
+}
+
+.btn-large {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: 1.1rem;
+    width: 100%;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.week-indicator {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-xs);
+}
+
+.week-label { font-size: 0.9rem; color: var(--text-medium); }
+.week-number { font-size: 2rem; font-weight: 700; color: var(--primary-dark); }
+.week-total { font-size: 1rem; color: var(--text-light); }
+
+.semester-phase {
+    background: var(--accent-light);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-xl);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.semester-phase.midterms { background: var(--warning); }
+.semester-phase.finals { background: var(--danger); }
+
+.reputation-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.reputation-label { color: var(--text-medium); font-size: 0.9rem; }
+.reputation-status { font-weight: 600; color: var(--primary); }
+
+.resource-panel {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.resource-panel h2 {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    margin-bottom: var(--spacing-md);
+}
+
+.resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.resource-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    background: var(--bg-light);
+}
+
+.resource-icon { font-size: 2rem; }
+.resource-info { flex: 1; }
+
+.resource-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    margin-bottom: var(--spacing-xs);
+}
+
+.resource-bar-container {
+    height: 8px;
+    background: #DDD;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: var(--spacing-xs);
+}
+
+.resource-bar {
+    height: 100%;
+    border-radius: var(--radius-sm);
+    transition: width var(--transition-normal);
+}
+
+.resource-card.budget .resource-bar { background: linear-gradient(90deg, var(--budget-color), #2ECC71); }
+.resource-card.time .resource-bar { background: linear-gradient(90deg, var(--time-color), #5DADE2); }
+.resource-card.energy .resource-bar { background: linear-gradient(90deg, var(--energy-color), #F4D03F); }
+.resource-value { font-size: 0.85rem; color: var(--text-medium); }
+.resource-card.insufficient .resource-bar { background: var(--danger) !important; }
+.resource-card.insufficient .resource-value { color: var(--danger); font-weight: 600; }
+
+.planning-section {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.planning-section h2 {
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--bg-light);
+}
+
+.planning-category { margin-bottom: var(--spacing-xl); }
+.planning-category:last-child { margin-bottom: 0; }
+.planning-category h3 { font-size: 1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+
+.event-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.event-type-card {
+    padding: var(--spacing-md);
+    border: 2px solid #E0E0E0;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: center;
+    background: var(--bg-card);
+}
+
+.event-type-card:hover {
+    border-color: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+.event-type-card.selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(91, 140, 90, 0.1) 0%, rgba(91, 140, 90, 0.05) 100%);
+    box-shadow: var(--shadow-sm);
+}
+
+.event-type-icon { font-size: 2rem; margin-bottom: var(--spacing-xs); }
+.event-type-name { font-weight: 600; font-size: 0.85rem; color: var(--text-dark); margin-bottom: var(--spacing-xs); }
+.event-type-cost { font-size: 0.75rem; color: var(--text-medium); }
+
+.venue-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.venue-card {
+    padding: var(--spacing-md);
+    border: 2px solid #E0E0E0;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: var(--bg-card);
+}
+
+.venue-card:hover { border-color: var(--primary-light); }
+
+.venue-card.selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(91, 140, 90, 0.1) 0%, rgba(91, 140, 90, 0.05) 100%);
+}
+
+.venue-header { display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs); }
+.venue-icon { font-size: 1.5rem; }
+.venue-name { font-weight: 600; font-size: 0.9rem; }
+.venue-details { font-size: 0.8rem; color: var(--text-medium); }
+.venue-warning { font-size: 0.75rem; color: var(--warning); margin-top: var(--spacing-xs); }
+
+.slider-container { padding: var(--spacing-sm) 0; }
+
+.slider-container input[type="range"] {
+    width: 100%;
+    height: 8px;
+    border-radius: var(--radius-sm);
+    background: #DDD;
+    outline: none;
+    -webkit-appearance: none;
+    margin-bottom: var(--spacing-sm);
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast);
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+.slider-container input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.slider-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-light); }
+.slider-value { font-weight: 600; color: var(--primary-dark); font-size: 0.9rem; }
+.slider-description { text-align: center; color: var(--text-medium); font-size: 0.85rem; font-style: italic; margin-top: var(--spacing-sm); }
+
+.cost-summary {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.cost-summary h2 { font-size: 1.1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+
+.cost-breakdown {
+    background: var(--bg-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.cost-row { display: flex; justify-content: space-between; padding: var(--spacing-xs) 0; font-size: 0.9rem; }
+.cost-row span:last-child { font-weight: 600; }
+.cost-warnings { margin-bottom: var(--spacing-md); }
+
+.cost-warning {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.random-event-container {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    text-align: center;
+    max-width: 500px;
+    margin: 10vh auto 0;
+    box-shadow: var(--shadow-lg);
+}
+
+.random-event-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+    animation: bounce 0.5s ease infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-10px); }
+}
+
+.random-event-container h2 { color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.random-event-description { color: var(--text-medium); font-size: 1.1rem; margin-bottom: var(--spacing-xl); line-height: 1.8; }
+.random-event-choices { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+
+.random-choice-btn {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: left;
+}
+
+.random-choice-btn:hover { background: var(--primary); color: white; }
+.random-choice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.choice-text { display: block; font-weight: 600; margin-bottom: var(--spacing-xs); }
+.choice-cost { font-size: 0.85rem; color: var(--text-medium); }
+.random-choice-btn:hover .choice-cost { color: rgba(255,255,255,0.8); }
+
+.results-container {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.results-container h2 { text-align: center; color: var(--text-dark); margin-bottom: var(--spacing-lg); font-size: 1.8rem; }
+.results-visual { text-align: center; margin-bottom: var(--spacing-xl); min-height: 80px; }
+.attendees-animation { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--spacing-xs); }
+.attendee-icon { font-size: 1.5rem; animation: popIn 0.3s ease backwards; }
+
+@keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.results-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    text-align: center;
+    padding: var(--spacing-lg);
+    background: var(--bg-light);
+    border-radius: var(--radius-md);
+}
+
+.stat-icon { font-size: 2rem; margin-bottom: var(--spacing-sm); }
+.stat-label { display: block; font-size: 0.85rem; color: var(--text-medium); margin-bottom: var(--spacing-xs); }
+.stat-value { display: block; font-size: 2rem; font-weight: 700; color: var(--text-dark); }
+.stat-card.attendance .stat-value { color: var(--info); }
+.stat-card.happiness .stat-value { color: var(--success); }
+.stat-card.happiness .stat-value.low { color: var(--danger); }
+.stat-card.happiness .stat-value.medium { color: var(--warning); }
+.stat-card.reputation-change .stat-value { color: var(--accent); }
+.stat-card.reputation-change .stat-value.positive { color: var(--success); }
+.stat-card.reputation-change .stat-value.negative { color: var(--danger); }
+.stat-detail { font-size: 0.8rem; color: var(--text-light); }
+
+.event-highlights { margin-bottom: var(--spacing-xl); }
+.event-highlights h3 { font-size: 1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.event-highlights ul { list-style: none; }
+
+.event-highlights li {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-light);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.9rem;
+    color: var(--text-medium);
+    border-left: 3px solid var(--primary);
+}
+
+.event-highlights li.negative { border-left-color: var(--danger); }
+.event-highlights li.positive { border-left-color: var(--success); }
+
+.results-summary {
+    text-align: center;
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, rgba(91, 140, 90, 0.1) 0%, rgba(91, 140, 90, 0.05) 100%);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-lg);
+    font-style: italic;
+    color: var(--text-medium);
+}
+
+.semester-summary-container {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.semester-summary-container h2 { text-align: center; font-size: 2rem; color: var(--text-dark); margin-bottom: var(--spacing-xl); }
+
+.final-score-display {
+    text-align: center;
+    padding: var(--spacing-xl);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: var(--radius-lg);
+    color: white;
+    margin-bottom: var(--spacing-xl);
+}
+
+.final-score-label { font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; }
+.final-score-value { font-size: 4rem; font-weight: 700; line-height: 1.2; }
+.final-rating { font-size: 1.3rem; margin-top: var(--spacing-sm); }
+
+.semester-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.semester-stat {
+    text-align: center;
+    padding: var(--spacing-md);
+    background: var(--bg-light);
+    border-radius: var(--radius-md);
+}
+
+.semester-stat-label { display: block; font-size: 0.85rem; color: var(--text-medium); margin-bottom: var(--spacing-xs); }
+.semester-stat-value { display: block; font-size: 1.5rem; font-weight: 700; color: var(--primary-dark); }
+
+.week-history { margin-bottom: var(--spacing-xl); }
+.week-history h3 { font-size: 1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+
+.week-history-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-xs);
+}
+
+.week-history-card {
+    padding: var(--spacing-sm);
+    background: var(--bg-light);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: 0.75rem;
+}
+
+.week-history-card.good { background: rgba(39, 174, 96, 0.2); border: 1px solid var(--success); }
+.week-history-card.medium { background: rgba(243, 156, 18, 0.2); border: 1px solid var(--warning); }
+.week-history-card.poor { background: rgba(231, 76, 60, 0.2); border: 1px solid var(--danger); }
+.week-history-number { font-weight: 700; color: var(--text-dark); }
+.week-history-happiness { color: var(--text-medium); }
+.end-buttons { display: flex; justify-content: center; }
+
+@media (max-width: 768px) {
+    .title-container h1 { font-size: 1.8rem; }
+    .game-header { flex-direction: column; text-align: center; }
+    .resources-grid { grid-template-columns: 1fr; }
+    .event-types-grid { grid-template-columns: repeat(2, 1fr); }
+    .venue-options { grid-template-columns: 1fr; }
+    .results-stats { grid-template-columns: 1fr; }
+    .semester-stats { grid-template-columns: 1fr; }
+    .week-history-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 480px) {
+    #app { padding: var(--spacing-sm); }
+    .title-container { margin-top: 5vh; }
+    .event-types-grid { grid-template-columns: 1fr; }
+    .week-history-grid { grid-template-columns: repeat(3, 1fr); }
+    .final-score-value { font-size: 3rem; }
+}
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Title Screen -->
+        <div id="screen-title" class="screen active">
+            <div class="title-container">
+                <h1>📚 Study Break Planner</h1>
+                <p class="subtitle">A Student Advisor Simulation</p>
+                <div class="title-description">
+                    <p>Take on the role of a first-year student advisor planning weekly study breaks.</p>
+                    <p>Manage your budget, time, and energy to create memorable events!</p>
+                </div>
+                <div class="title-buttons">
+                    <button id="btn-new-game" class="btn btn-primary">New Game</button>
+                    <button id="btn-continue" class="btn btn-secondary" disabled>Continue Game</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Planning Screen -->
+        <div id="screen-planning" class="screen">
+            <header class="game-header">
+                <div class="week-indicator">
+                    <span class="week-label">Week</span>
+                    <span id="current-week" class="week-number">1</span>
+                    <span class="week-total">/ 12</span>
+                </div>
+                <div class="semester-phase" id="semester-phase">Early Semester</div>
+                <div class="reputation-display">
+                    <span class="reputation-label">Reputation:</span>
+                    <span id="reputation-status" class="reputation-status">Unknown newcomer</span>
+                </div>
+            </header>
+
+            <section class="resource-panel">
+                <h2>Available Resources</h2>
+                <div class="resources-grid">
+                    <div class="resource-card budget">
+                        <div class="resource-icon">💰</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Budget</span>
+                            <div class="resource-bar-container">
+                                <div class="resource-bar" id="budget-bar"></div>
+                            </div>
+                            <span class="resource-value">$<span id="budget-current">150</span> / $<span id="budget-max">200</span></span>
+                        </div>
+                    </div>
+                    <div class="resource-card time">
+                        <div class="resource-icon">⏰</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Planning Time</span>
+                            <div class="resource-bar-container">
+                                <div class="resource-bar" id="time-bar"></div>
+                            </div>
+                            <span class="resource-value"><span id="time-current">8</span> / 8 hours</span>
+                        </div>
+                    </div>
+                    <div class="resource-card energy">
+                        <div class="resource-icon">⚡</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Energy</span>
+                            <div class="resource-bar-container">
+                                <div class="resource-bar" id="energy-bar"></div>
+                            </div>
+                            <span class="resource-value"><span id="energy-current">10</span> / 10 points</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="planning-section">
+                <h2>Plan Your Study Break Event</h2>
+                <div class="planning-category">
+                    <h3>Event Type</h3>
+                    <div class="event-types-grid" id="event-types"></div>
+                </div>
+                <div class="planning-category">
+                    <h3>Venue</h3>
+                    <div class="venue-options" id="venue-options"></div>
+                </div>
+                <div class="planning-category">
+                    <h3>Food & Refreshments</h3>
+                    <div class="slider-container">
+                        <input type="range" id="food-slider" min="0" max="100" value="30">
+                        <div class="slider-labels">
+                            <span>Basic ($<span id="food-min">0</span>)</span>
+                            <span class="slider-value">$<span id="food-current">30</span></span>
+                            <span>Premium ($<span id="food-max">100</span>)</span>
+                        </div>
+                        <p class="slider-description" id="food-description">Decent snacks and drinks</p>
+                    </div>
+                </div>
+                <div class="planning-category">
+                    <h3>Promotion Effort</h3>
+                    <div class="slider-container">
+                        <input type="range" id="promotion-slider" min="0" max="5" value="2">
+                        <div class="slider-labels">
+                            <span>Minimal (0h)</span>
+                            <span class="slider-value"><span id="promotion-current">2</span> hours</span>
+                            <span>Maximum (5h)</span>
+                        </div>
+                        <p class="slider-description" id="promotion-description">Posters and some social media</p>
+                    </div>
+                </div>
+                <div class="planning-category">
+                    <h3>Personal Touches</h3>
+                    <div class="slider-container">
+                        <input type="range" id="personal-slider" min="0" max="4" value="1">
+                        <div class="slider-labels">
+                            <span>None (0)</span>
+                            <span class="slider-value"><span id="personal-current">1</span> point</span>
+                            <span>Maximum (4)</span>
+                        </div>
+                        <p class="slider-description" id="personal-description">Remember a few names</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="cost-summary">
+                <h2>Event Summary</h2>
+                <div class="cost-breakdown">
+                    <div class="cost-row">
+                        <span>Budget Cost:</span>
+                        <span id="total-budget-cost">$0</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Time Required:</span>
+                        <span id="total-time-cost">0 hours</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Energy Required:</span>
+                        <span id="total-energy-cost">0 points</span>
+                    </div>
+                </div>
+                <div class="cost-warnings" id="cost-warnings"></div>
+                <button id="btn-plan-event" class="btn btn-primary btn-large">Plan Event</button>
+            </section>
+        </div>
+
+        <!-- Random Event Screen -->
+        <div id="screen-random-event" class="screen">
+            <div class="random-event-container">
+                <div class="random-event-icon" id="random-event-icon">⚠️</div>
+                <h2 id="random-event-title">Random Event!</h2>
+                <p id="random-event-description" class="random-event-description"></p>
+                <div class="random-event-choices" id="random-event-choices"></div>
+            </div>
+        </div>
+
+        <!-- Event Results Screen -->
+        <div id="screen-results" class="screen">
+            <div class="results-container">
+                <h2>Event Complete!</h2>
+                <div class="results-visual">
+                    <div class="attendees-animation" id="attendees-animation"></div>
+                </div>
+                <div class="results-stats">
+                    <div class="stat-card attendance">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Attendance</span>
+                            <span class="stat-value" id="result-attendance">0</span>
+                            <span class="stat-detail" id="result-attendance-detail">students</span>
+                        </div>
+                    </div>
+                    <div class="stat-card happiness">
+                        <div class="stat-icon">😊</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Happiness</span>
+                            <span class="stat-value" id="result-happiness">0</span>
+                            <span class="stat-detail">/ 100</span>
+                        </div>
+                    </div>
+                    <div class="stat-card reputation-change">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Reputation</span>
+                            <span class="stat-value" id="result-reputation-change">+0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="event-highlights">
+                    <h3>Event Highlights</h3>
+                    <ul id="event-highlights-list"></ul>
+                </div>
+                <div class="results-summary" id="results-summary"></div>
+                <button id="btn-next-week" class="btn btn-primary btn-large">Continue to Next Week</button>
+            </div>
+        </div>
+
+        <!-- Semester Summary Screen -->
+        <div id="screen-semester-end" class="screen">
+            <div class="semester-summary-container">
+                <h2>Semester Complete!</h2>
+                <div class="final-score-display">
+                    <div class="final-score-label">Final Score</div>
+                    <div class="final-score-value" id="final-score">0</div>
+                    <div class="final-rating" id="final-rating">Novice Advisor</div>
+                </div>
+                <div class="semester-stats">
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Total Attendance</span>
+                        <span class="semester-stat-value" id="total-attendance">0</span>
+                    </div>
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Average Happiness</span>
+                        <span class="semester-stat-value" id="avg-happiness">0</span>
+                    </div>
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Regulars Built</span>
+                        <span class="semester-stat-value" id="total-regulars">0</span>
+                    </div>
+                    <div class="semester-stat">
+                        <span class="semester-stat-label">Best Event</span>
+                        <span class="semester-stat-value" id="best-event">-</span>
+                    </div>
+                </div>
+                <div class="week-history">
+                    <h3>Semester Timeline</h3>
+                    <div class="week-history-grid" id="week-history-grid"></div>
+                </div>
+                <div class="end-buttons">
+                    <button id="btn-play-again" class="btn btn-primary">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ============================================
+// GAME ENGINE
+// ============================================
+
+const CONFIG = {
+    TOTAL_WEEKS: 12,
+    FIRST_YEAR_CLASS_SIZE: 500,
+    WEEKLY_BUDGET: 150,
+    MAX_SAVINGS: 50,
+    WEEKLY_TIME: 8,
+    WEEKLY_ENERGY: 10,
+    ENERGY_PENALTY: 3,
+    RANDOM_EVENT_CHANCE: 0.30,
+    REPUTATION_MIN: 0,
+    REPUTATION_MAX: 100,
+    REPUTATION_START: 50,
+    REGULARS_GROWTH_RATE: 0.15,
+    REGULARS_RETENTION_RATE: 0.85,
+    MIDTERM_WEEKS: [4, 5, 9, 10],
+    FINALS_WEEK: 12
+};
+
+const EVENT_TYPES = {
+    pizza_chill: { id: 'pizza_chill', name: 'Pizza & Chill', icon: '🍕', description: 'Low-key hangout with pizza', baseCost: 40, baseEnergy: 3, baseTime: 1, baseAppeal: 60, crowdTolerance: 0.9 },
+    game_night: { id: 'game_night', name: 'Game Night', icon: '🎮', description: 'Board games and video games', baseCost: 50, baseEnergy: 5, baseTime: 2, baseAppeal: 75, crowdTolerance: 0.7 },
+    outdoor_activity: { id: 'outdoor_activity', name: 'Outdoor Activity', icon: '🏃', description: 'Sports, frisbee, or nature walk', baseCost: 25, baseEnergy: 7, baseTime: 2, baseAppeal: 70, crowdTolerance: 1.0, weatherDependent: true },
+    themed_party: { id: 'themed_party', name: 'Themed Party', icon: '🎉', description: 'Decorations, costumes, and fun', baseCost: 80, baseEnergy: 6, baseTime: 3, baseAppeal: 85, crowdTolerance: 0.8 },
+    wellness: { id: 'wellness', name: 'Wellness & Self-Care', icon: '🧘', description: 'Meditation, yoga, or relaxation', baseCost: 35, baseEnergy: 4, baseTime: 2, baseAppeal: 55, crowdTolerance: 0.5, stressRelief: true },
+    study_snacks: { id: 'study_snacks', name: 'Study Session + Snacks', icon: '📚', description: 'Collaborative studying with refreshments', baseCost: 30, baseEnergy: 3, baseTime: 1, baseAppeal: 50, crowdTolerance: 0.6, stressRelief: true }
+};
+
+const VENUES = {
+    common_room: { id: 'common_room', name: 'Common Room', icon: '🏠', description: 'Cozy but limited space', cost: 0, capacity: 30, vibeBonus: 0, weatherRisk: false },
+    reserved_lounge: { id: 'reserved_lounge', name: 'Reserved Lounge', icon: '🛋️', description: 'Better atmosphere, small fee', cost: 25, capacity: 50, vibeBonus: 10, weatherRisk: false },
+    outdoor_quad: { id: 'outdoor_quad', name: 'Outdoor Quad', icon: '🌳', description: 'Open air, weather dependent', cost: 0, capacity: 100, vibeBonus: 5, weatherRisk: true }
+};
+
+const RANDOM_EVENTS = [
+    { id: 'double_booked', title: 'Room Double-Booked!', icon: '😱', description: 'The student activities board accidentally double-booked your reserved space!', choices: [
+        { text: 'Find an alternative space quickly', cost: { time: 2, energy: 2 }, effect: { venueCapacity: -0.3 }, resultText: 'You scrambled and found a smaller backup room.' },
+        { text: 'Negotiate to share the space', cost: { energy: 3 }, effect: { happiness: -10, venueCapacity: -0.2 }, resultText: 'You shared the space, but it was cramped.' },
+        { text: 'Postpone and do extra promotion', cost: { budget: 20 }, effect: { attendance: 1.2 }, resultText: 'The delay built anticipation!' }
+    ], condition: (state) => state.selectedVenue !== 'outdoor_quad' },
+    { id: 'residence_hall_crisis', title: 'Residence Hall Needs Support', icon: '💙', description: 'A residence hall is struggling with homesickness and stress.', choices: [
+        { text: 'Extend personal outreach', cost: { time: 2, energy: 3 }, effect: { reputation: 8, regulars: 5 }, resultText: 'Your extra effort meant a lot.' },
+        { text: 'Invite them but stay focused', cost: {}, effect: { attendance: 1.1 }, resultText: 'A few more students came.' },
+        { text: 'Host a special mini-event', cost: { budget: 30, energy: 4 }, effect: { reputation: 15, happiness: 10 }, resultText: 'The dedicated event was appreciated.' }
+    ]},
+    { id: 'sponsor_offer', title: 'Local Business Sponsorship!', icon: '🎁', description: 'A local coffee shop wants to sponsor your event!', choices: [
+        { text: 'Accept the sponsorship', cost: {}, effect: { budget: 40, happiness: 5 }, resultText: 'Free coffee and pastries were a hit!' },
+        { text: 'Decline to keep it ad-free', cost: {}, effect: { happiness: 3 }, resultText: 'Students appreciated the authentic vibe.' },
+        { text: 'Negotiate for better terms', cost: { time: 1 }, effect: { budget: 25, happiness: 8 }, resultText: 'You got a good deal!' }
+    ]},
+    { id: 'rain_forecast', title: 'Rain in the Forecast!', icon: '🌧️', description: '70% chance of rain during your outdoor event.', choices: [
+        { text: 'Move indoors', cost: { budget: 15, time: 1 }, effect: { venueCapacity: -0.4 }, resultText: 'The smaller space worked.' },
+        { text: 'Risk it', cost: {}, effect: { weatherRoll: true }, resultText: '' },
+        { text: 'Rent tents', cost: { budget: 40 }, effect: { happiness: 5 }, resultText: 'The covered space had a cozy festival vibe!' }
+    ], condition: (state) => state.selectedVenue === 'outdoor_quad' },
+    { id: 'viral_post', title: 'Your Event Goes Viral!', icon: '📱', description: 'A student\'s post about your last event is trending!', choices: [
+        { text: 'Extra promotion', cost: { time: 2 }, effect: { attendance: 1.4, reputation: 5 }, resultText: 'The buzz brought way more people!' },
+        { text: 'Keep it low-key', cost: {}, effect: { attendance: 1.15 }, resultText: 'Word spread naturally.' }
+    ], condition: (state) => state.reputation >= 60 },
+    { id: 'celebrity_appearance', title: 'Special Guest Available!', icon: '⭐', description: 'A popular campus figure offers to appear!', choices: [
+        { text: 'Welcome them', cost: { energy: 2 }, effect: { attendance: 1.3, happiness: 10 }, resultText: 'The special guest was a huge draw!' },
+        { text: 'Politely decline', cost: {}, effect: {}, resultText: 'You kept the intimate vibe.' }
+    ]},
+    { id: 'volunteer_help', title: 'Volunteer Helpers!', icon: '🙋', description: 'Some regulars offer to help!', choices: [
+        { text: 'Accept their help', cost: {}, effect: { energy: 3, happiness: 5, regulars: 2 }, resultText: 'The volunteers made everything easier!' },
+        { text: 'Handle it yourself', cost: {}, effect: {}, resultText: 'You kept control.' }
+    ], condition: (state) => state.regulars >= 5 }
+];
+
+const PROMOTION_LEVELS = [
+    { hours: 0, description: 'Word of mouth only', multiplier: 0.6 },
+    { hours: 1, description: 'A few posters around campus', multiplier: 0.8 },
+    { hours: 2, description: 'Posters and some social media', multiplier: 1.0 },
+    { hours: 3, description: 'Active social media campaign', multiplier: 1.2 },
+    { hours: 4, description: 'Full promotion with outreach', multiplier: 1.4 },
+    { hours: 5, description: 'Maximum visibility', multiplier: 1.6 }
+];
+
+const FOOD_LEVELS = [
+    { min: 0, max: 15, description: 'Just water and crackers', quality: 0.5 },
+    { min: 16, max: 35, description: 'Basic chips and drinks', quality: 0.7 },
+    { min: 36, max: 55, description: 'Decent snacks and drinks', quality: 0.9 },
+    { min: 56, max: 75, description: 'Good variety of food', quality: 1.1 },
+    { min: 76, max: 90, description: 'Great spread for everyone', quality: 1.25 },
+    { min: 91, max: 100, description: 'Premium catering', quality: 1.4 }
+];
+
+const PERSONAL_TOUCH_LEVELS = [
+    { points: 0, description: 'No personal engagement', bonus: 0 },
+    { points: 1, description: 'Remember a few names', bonus: 5 },
+    { points: 2, description: 'Follow up with regulars', bonus: 12 },
+    { points: 3, description: 'Personalized welcomes', bonus: 20 },
+    { points: 4, description: 'Deep connections', bonus: 30 }
+];
+
+const REPUTATION_MESSAGES = [
+    { min: 0, max: 20, message: 'Students avoid your events', trend: 'negative' },
+    { min: 21, max: 35, message: 'Attendance has been sluggish', trend: 'negative' },
+    { min: 36, max: 50, message: 'Unknown newcomer', trend: 'neutral' },
+    { min: 51, max: 65, message: 'Building a small following', trend: 'positive' },
+    { min: 66, max: 80, message: 'Students are buzzing!', trend: 'positive' },
+    { min: 81, max: 95, message: 'You\'re the talk of campus!', trend: 'positive' },
+    { min: 96, max: 100, message: 'Legendary advisor!', trend: 'positive' }
+];
+
+let gameState = {
+    week: 1, budget: CONFIG.WEEKLY_BUDGET, savedBudget: 0, time: CONFIG.WEEKLY_TIME, energy: CONFIG.WEEKLY_ENERGY,
+    reputation: CONFIG.REPUTATION_START, regulars: 0, lastWeekHappiness: 50,
+    selectedEventType: null, selectedVenue: null, foodBudget: 30, promotionHours: 2, personalTouchPoints: 1,
+    currentRandomEvent: null, randomEventChoice: null, weekHistory: [], totalAttendance: 0, totalHappiness: 0, endedAtZeroEnergy: false
+};
+
+function initNewGame() {
+    gameState = { week: 1, budget: CONFIG.WEEKLY_BUDGET, savedBudget: 0, time: CONFIG.WEEKLY_TIME, energy: CONFIG.WEEKLY_ENERGY,
+        reputation: CONFIG.REPUTATION_START, regulars: 0, lastWeekHappiness: 50, selectedEventType: 'pizza_chill',
+        selectedVenue: 'common_room', foodBudget: 30, promotionHours: 2, personalTouchPoints: 1,
+        currentRandomEvent: null, randomEventChoice: null, weekHistory: [], totalAttendance: 0, totalHappiness: 0, endedAtZeroEnergy: false };
+    saveGame();
+    return gameState;
+}
+
+function saveGame() { try { localStorage.setItem('studyBreakPlanner_save', JSON.stringify(gameState)); } catch(e) {} }
+function loadGame() { try { const saved = localStorage.getItem('studyBreakPlanner_save'); if (saved) { const parsed = JSON.parse(saved); if (parsed.week && parsed.budget !== undefined) { gameState = { ...gameState, ...parsed }; return true; } } } catch(e) {} return false; }
+function hasSavedGame() { try { const saved = localStorage.getItem('studyBreakPlanner_save'); if (saved) { const parsed = JSON.parse(saved); return parsed.week && parsed.week <= CONFIG.TOTAL_WEEKS; } } catch(e) {} return false; }
+function clearSave() { try { localStorage.removeItem('studyBreakPlanner_save'); } catch(e) {} }
+
+function calculateEventCosts() {
+    const eventType = EVENT_TYPES[gameState.selectedEventType];
+    const venue = VENUES[gameState.selectedVenue];
+    return { budget: eventType.baseCost + venue.cost + gameState.foodBudget, time: eventType.baseTime + gameState.promotionHours, energy: eventType.baseEnergy + gameState.personalTouchPoints };
+}
+
+function checkAffordability() {
+    const costs = calculateEventCosts();
+    return { budget: gameState.budget >= costs.budget, time: gameState.time >= costs.time, energy: gameState.energy >= costs.energy,
+        canAfford: gameState.budget >= costs.budget && gameState.time >= costs.time && gameState.energy >= costs.energy, costs: costs };
+}
+
+function getRemainingResources() { const costs = calculateEventCosts(); return { budget: gameState.budget - costs.budget, time: gameState.time - costs.time, energy: gameState.energy - costs.energy }; }
+
+function getSemesterPhase() {
+    const week = gameState.week;
+    if (week === CONFIG.FINALS_WEEK) return { name: 'Finals Week', cssClass: 'finals', demandMultiplier: 1.5, difficultyMultiplier: 1.4 };
+    if (CONFIG.MIDTERM_WEEKS.includes(week)) return { name: 'Midterms', cssClass: 'midterms', demandMultiplier: 1.3, difficultyMultiplier: 1.2 };
+    if (week <= 2) return { name: 'Welcome Week', cssClass: '', demandMultiplier: 1.2, difficultyMultiplier: 0.9 };
+    if (week >= 10 && week < 12) return { name: 'Late Semester', cssClass: '', demandMultiplier: 1.1, difficultyMultiplier: 1.1 };
+    return { name: 'Regular Week', cssClass: '', demandMultiplier: 1.0, difficultyMultiplier: 1.0 };
+}
+
+function calculateAttendance(modifiers = {}) {
+    const eventType = EVENT_TYPES[gameState.selectedEventType];
+    const venue = VENUES[gameState.selectedVenue];
+    const phase = getSemesterPhase();
+    let baseAttendance = (eventType.baseAppeal / 100) * venue.capacity;
+    const promoLevel = PROMOTION_LEVELS[gameState.promotionHours];
+    baseAttendance *= promoLevel.multiplier;
+    const reputationFactor = 0.5 + (gameState.reputation / 100);
+    baseAttendance *= reputationFactor;
+    const womBonus = (gameState.lastWeekHappiness - 50) / 100;
+    baseAttendance *= (1 + womBonus);
+    baseAttendance *= phase.demandMultiplier;
+    if (eventType.stressRelief && (phase.name === 'Midterms' || phase.name === 'Finals Week')) baseAttendance *= 1.2;
+    baseAttendance += gameState.regulars * 0.8;
+    if (modifiers.attendance) baseAttendance *= modifiers.attendance;
+    if (modifiers.venueCapacity) { const reducedCapacity = venue.capacity * (1 + modifiers.venueCapacity); baseAttendance = Math.min(baseAttendance, reducedCapacity); }
+    const variance = 0.85 + Math.random() * 0.3;
+    let finalAttendance = Math.round(baseAttendance * variance);
+    const crowdedThreshold = venue.capacity * 1.2;
+    const hardCap = venue.capacity * 1.5;
+    finalAttendance = Math.min(finalAttendance, hardCap);
+    finalAttendance = Math.max(finalAttendance, Math.round(gameState.regulars * 0.5));
+    finalAttendance = Math.max(finalAttendance, 3);
+    return { count: finalAttendance, percentage: Math.round((finalAttendance / CONFIG.FIRST_YEAR_CLASS_SIZE) * 100), isCrowded: finalAttendance > crowdedThreshold, crowdingRatio: finalAttendance / venue.capacity, venueCapacity: venue.capacity };
+}
+
+function calculateHappiness(attendance, modifiers = {}) {
+    const eventType = EVENT_TYPES[gameState.selectedEventType];
+    const venue = VENUES[gameState.selectedVenue];
+    const phase = getSemesterPhase();
+    let happiness = 50;
+    let highlights = [];
+    const foodLevel = FOOD_LEVELS.find(l => gameState.foodBudget >= l.min && gameState.foodBudget <= l.max);
+    const foodBonus = Math.round((foodLevel.quality - 0.5) * 25);
+    happiness += foodBonus;
+    if (foodBonus >= 15) highlights.push({ text: 'The food spread was impressive!', positive: true });
+    else if (foodBonus <= 0) highlights.push({ text: 'Students wished there was more food.', positive: false });
+    happiness += venue.vibeBonus;
+    if (venue.vibeBonus >= 10) highlights.push({ text: 'The venue had a great atmosphere.', positive: true });
+    const personalLevel = PERSONAL_TOUCH_LEVELS[gameState.personalTouchPoints];
+    happiness += personalLevel.bonus;
+    if (personalLevel.bonus >= 20) highlights.push({ text: 'Students felt personally welcomed.', positive: true });
+    if (eventType.stressRelief && (phase.name === 'Midterms' || phase.name === 'Finals Week')) { happiness += 10; highlights.push({ text: 'Perfect for stressed students.', positive: true }); }
+    if (attendance.isCrowded) { const crowdPenalty = Math.round((attendance.crowdingRatio - 1.2) * 40); const toleratedPenalty = Math.round(crowdPenalty * (1 - eventType.crowdTolerance)); happiness -= toleratedPenalty; if (toleratedPenalty > 5) highlights.push({ text: 'The event felt overcrowded.', positive: false }); }
+    const fillRate = attendance.count / venue.capacity;
+    if (fillRate < 0.3) { happiness -= 15; highlights.push({ text: 'Turnout was disappointingly low.', positive: false }); }
+    else if (fillRate < 0.5) happiness -= 5;
+    else if (fillRate >= 0.7 && fillRate <= 1.1) { happiness += 5; highlights.push({ text: 'Great turnout!', positive: true }); }
+    happiness = Math.round(happiness / phase.difficultyMultiplier);
+    if (modifiers.happiness) happiness += modifiers.happiness;
+    if (modifiers.weatherBad && venue.weatherRisk) { happiness -= 25; highlights.push({ text: 'Bad weather dampened spirits.', positive: false }); }
+    happiness = Math.max(1, Math.min(100, happiness));
+    return { score: happiness, highlights, foodQuality: foodLevel.description, personalTouches: personalLevel.description };
+}
+
+function calculateReputationChange(attendance, happiness, modifiers = {}) {
+    let change = Math.round((happiness - 50) / 5);
+    const venue = VENUES[gameState.selectedVenue];
+    if (attendance >= venue.capacity * 0.8) change += 2;
+    if (modifiers.reputation) change += modifiers.reputation;
+    if (gameState.reputation > 80 && change > 0) change = Math.ceil(change * 0.5);
+    if (gameState.reputation < 30 && change < 0) change = Math.ceil(change * 0.5);
+    const newReputation = Math.max(CONFIG.REPUTATION_MIN, Math.min(CONFIG.REPUTATION_MAX, gameState.reputation + change));
+    return { change, newReputation, message: getReputationMessage(newReputation) };
+}
+
+function getReputationMessage(reputation) { return REPUTATION_MESSAGES.find(l => reputation >= l.min && reputation <= l.max) || REPUTATION_MESSAGES[3]; }
+
+function calculateRegularsChange(attendance, happiness, modifiers = {}) {
+    let keptRegulars = Math.round(gameState.regulars * CONFIG.REGULARS_RETENTION_RATE);
+    const happyFactor = Math.max(0, (happiness - 60) / 40);
+    const newRegulars = Math.round(attendance * CONFIG.REGULARS_GROWTH_RATE * happyFactor);
+    let modifierRegulars = modifiers.regulars || 0;
+    const totalRegulars = Math.min(keptRegulars + newRegulars + modifierRegulars, 50);
+    return { previous: gameState.regulars, kept: keptRegulars, gained: newRegulars + modifierRegulars, total: totalRegulars };
+}
+
+function checkForRandomEvent() {
+    if (Math.random() > CONFIG.RANDOM_EVENT_CHANCE) return null;
+    const eligibleEvents = RANDOM_EVENTS.filter(event => !event.condition || event.condition(gameState));
+    if (eligibleEvents.length === 0) return null;
+    const event = eligibleEvents[Math.floor(Math.random() * eligibleEvents.length)];
+    const remaining = getRemainingResources();
+    event.availableChoices = event.choices.filter(choice => {
+        const cost = choice.cost;
+        if (cost.budget && remaining.budget < cost.budget) return false;
+        if (cost.time && remaining.time < cost.time) return false;
+        if (cost.energy && remaining.energy < cost.energy) return false;
+        return true;
+    });
+    if (event.availableChoices.length === 0) return null;
+    return event;
+}
+
+function applyRandomEventChoice(event, choiceIndex) {
+    const choice = event.choices[choiceIndex];
+    const modifiers = { ...choice.effect };
+    if (choice.cost.budget) gameState.budget -= choice.cost.budget;
+    if (choice.cost.time) gameState.time -= choice.cost.time;
+    if (choice.cost.energy) gameState.energy -= choice.cost.energy;
+    if (modifiers.weatherRoll) {
+        const rainHappened = Math.random() < 0.7;
+        if (rainHappened) { modifiers.weatherBad = true; modifiers.resultText = 'It rained and the event was a soggy mess.'; }
+        else { modifiers.happiness = 10; modifiers.resultText = 'The weather held! Students loved it.'; }
+        delete modifiers.weatherRoll;
+    }
+    if (modifiers.budget && modifiers.budget > 0) { gameState.budget += modifiers.budget; delete modifiers.budget; }
+    if (modifiers.energy && modifiers.energy > 0) { gameState.energy += modifiers.energy; delete modifiers.energy; }
+    modifiers.resultText = modifiers.resultText || choice.resultText;
+    return modifiers;
+}
+
+function executeEvent(modifiers = {}) {
+    const costs = calculateEventCosts();
+    gameState.budget -= costs.budget;
+    gameState.time -= costs.time;
+    gameState.energy -= costs.energy;
+    const attendance = calculateAttendance(modifiers);
+    const happiness = calculateHappiness(attendance, modifiers);
+    const reputationResult = calculateReputationChange(attendance.count, happiness.score, modifiers);
+    const regularsResult = calculateRegularsChange(attendance.count, happiness.score, modifiers);
+    gameState.reputation = reputationResult.newReputation;
+    gameState.regulars = regularsResult.total;
+    gameState.lastWeekHappiness = happiness.score;
+    gameState.totalAttendance += attendance.count;
+    gameState.totalHappiness += happiness.score;
+    gameState.endedAtZeroEnergy = gameState.energy <= 0;
+    const weekRecord = { week: gameState.week, eventType: gameState.selectedEventType, venue: gameState.selectedVenue, attendance: attendance.count, happiness: happiness.score, reputationChange: reputationResult.change, regulars: regularsResult.total };
+    gameState.weekHistory.push(weekRecord);
+    saveGame();
+    return { attendance, happiness, reputationResult, regularsResult, weekRecord, remainingBudget: gameState.budget, randomEventResult: modifiers.resultText || null };
+}
+
+function advanceWeek() {
+    gameState.week++;
+    if (gameState.week > CONFIG.TOTAL_WEEKS) return false;
+    const savings = Math.min(gameState.budget, CONFIG.MAX_SAVINGS);
+    gameState.budget = CONFIG.WEEKLY_BUDGET + savings;
+    gameState.savedBudget = savings;
+    gameState.time = CONFIG.WEEKLY_TIME;
+    gameState.energy = gameState.endedAtZeroEnergy ? CONFIG.WEEKLY_ENERGY - CONFIG.ENERGY_PENALTY : CONFIG.WEEKLY_ENERGY;
+    gameState.endedAtZeroEnergy = false;
+    gameState.selectedEventType = 'pizza_chill';
+    gameState.selectedVenue = 'common_room';
+    gameState.foodBudget = 30;
+    gameState.promotionHours = 2;
+    gameState.personalTouchPoints = 1;
+    gameState.currentRandomEvent = null;
+    gameState.randomEventChoice = null;
+    saveGame();
+    return true;
+}
+
+function calculateFinalScore() {
+    const avgHappiness = Math.round(gameState.totalHappiness / CONFIG.TOTAL_WEEKS);
+    const attendanceScore = Math.min(2000, Math.round(gameState.totalAttendance * 2));
+    const happinessScore = Math.round(avgHappiness * 10);
+    const reputationScore = Math.round(gameState.reputation * 5);
+    const regularsScore = Math.min(500, Math.round(gameState.regulars * 17));
+    const totalScore = attendanceScore + happinessScore + reputationScore + regularsScore;
+    let rating;
+    if (totalScore >= 3500) rating = 'Legendary Campus Icon';
+    else if (totalScore >= 3000) rating = 'Beloved Advisor';
+    else if (totalScore >= 2500) rating = 'Campus Favorite';
+    else if (totalScore >= 2000) rating = 'Respected Organizer';
+    else if (totalScore >= 1500) rating = 'Competent Planner';
+    else if (totalScore >= 1000) rating = 'Learning the Ropes';
+    else rating = 'Room for Growth';
+    let bestEvent = null, bestHappiness = 0;
+    for (const week of gameState.weekHistory) { if (week.happiness > bestHappiness) { bestHappiness = week.happiness; bestEvent = `Week ${week.week}: ${EVENT_TYPES[week.eventType].name}`; } }
+    return { totalScore, rating, breakdown: { attendance: attendanceScore, happiness: happinessScore, reputation: reputationScore, regulars: regularsScore }, stats: { totalAttendance: gameState.totalAttendance, avgHappiness, finalReputation: gameState.reputation, finalRegulars: gameState.regulars, bestEvent } };
+}
+
+function getFoodDescription(budget) { const level = FOOD_LEVELS.find(l => budget >= l.min && budget <= l.max); return level ? level.description : 'Standard refreshments'; }
+function getPromotionDescription(hours) { const level = PROMOTION_LEVELS[hours]; return level ? level.description : 'Some promotion'; }
+function getPersonalDescription(points) { const level = PERSONAL_TOUCH_LEVELS[points]; return level ? level.description : 'Some personal engagement'; }
+
+// ============================================
+// UI MODULE
+// ============================================
+
+const elements = {
+    screens: { title: document.getElementById('screen-title'), planning: document.getElementById('screen-planning'), randomEvent: document.getElementById('screen-random-event'), results: document.getElementById('screen-results'), semesterEnd: document.getElementById('screen-semester-end') },
+    btnNewGame: document.getElementById('btn-new-game'), btnContinue: document.getElementById('btn-continue'),
+    currentWeek: document.getElementById('current-week'), semesterPhase: document.getElementById('semester-phase'), reputationStatus: document.getElementById('reputation-status'),
+    budgetBar: document.getElementById('budget-bar'), budgetCurrent: document.getElementById('budget-current'), budgetMax: document.getElementById('budget-max'),
+    timeBar: document.getElementById('time-bar'), timeCurrent: document.getElementById('time-current'),
+    energyBar: document.getElementById('energy-bar'), energyCurrent: document.getElementById('energy-current'),
+    eventTypesContainer: document.getElementById('event-types'), venueOptionsContainer: document.getElementById('venue-options'),
+    foodSlider: document.getElementById('food-slider'), foodCurrent: document.getElementById('food-current'), foodMin: document.getElementById('food-min'), foodMax: document.getElementById('food-max'), foodDescription: document.getElementById('food-description'),
+    promotionSlider: document.getElementById('promotion-slider'), promotionCurrent: document.getElementById('promotion-current'), promotionDescription: document.getElementById('promotion-description'),
+    personalSlider: document.getElementById('personal-slider'), personalCurrent: document.getElementById('personal-current'), personalDescription: document.getElementById('personal-description'),
+    totalBudgetCost: document.getElementById('total-budget-cost'), totalTimeCost: document.getElementById('total-time-cost'), totalEnergyCost: document.getElementById('total-energy-cost'), costWarnings: document.getElementById('cost-warnings'), btnPlanEvent: document.getElementById('btn-plan-event'),
+    randomEventIcon: document.getElementById('random-event-icon'), randomEventTitle: document.getElementById('random-event-title'), randomEventDescription: document.getElementById('random-event-description'), randomEventChoices: document.getElementById('random-event-choices'),
+    attendeesAnimation: document.getElementById('attendees-animation'), resultAttendance: document.getElementById('result-attendance'), resultAttendanceDetail: document.getElementById('result-attendance-detail'), resultHappiness: document.getElementById('result-happiness'), resultReputationChange: document.getElementById('result-reputation-change'), eventHighlightsList: document.getElementById('event-highlights-list'), resultsSummary: document.getElementById('results-summary'), btnNextWeek: document.getElementById('btn-next-week'),
+    finalScore: document.getElementById('final-score'), finalRating: document.getElementById('final-rating'), totalAttendance: document.getElementById('total-attendance'), avgHappiness: document.getElementById('avg-happiness'), totalRegulars: document.getElementById('total-regulars'), bestEvent: document.getElementById('best-event'), weekHistoryGrid: document.getElementById('week-history-grid'), btnPlayAgain: document.getElementById('btn-play-again')
+};
+
+let currentEventModifiers = {};
+
+function showScreen(screenName) { Object.values(elements.screens).forEach(screen => screen.classList.remove('active')); elements.screens[screenName].classList.add('active'); }
+
+function initTitleScreen() { elements.btnContinue.disabled = !hasSavedGame(); }
+
+function renderPlanningScreen() { renderHeader(); renderResources(); renderEventTypes(); renderVenues(); renderSliders(); updateCostSummary(); }
+
+function renderHeader() {
+    elements.currentWeek.textContent = gameState.week;
+    const phase = getSemesterPhase();
+    elements.semesterPhase.textContent = phase.name;
+    elements.semesterPhase.className = `semester-phase ${phase.cssClass}`;
+    const repMessage = getReputationMessage(gameState.reputation);
+    elements.reputationStatus.textContent = repMessage.message;
+}
+
+function renderResources() {
+    const maxBudget = CONFIG.WEEKLY_BUDGET + CONFIG.MAX_SAVINGS;
+    elements.budgetCurrent.textContent = gameState.budget;
+    elements.budgetMax.textContent = maxBudget;
+    elements.budgetBar.style.width = `${(gameState.budget / maxBudget) * 100}%`;
+    elements.timeCurrent.textContent = gameState.time;
+    elements.timeBar.style.width = `${(gameState.time / CONFIG.WEEKLY_TIME) * 100}%`;
+    elements.energyCurrent.textContent = gameState.energy;
+    elements.energyBar.style.width = `${(gameState.energy / CONFIG.WEEKLY_ENERGY) * 100}%`;
+}
+
+function renderEventTypes() {
+    elements.eventTypesContainer.innerHTML = '';
+    Object.values(EVENT_TYPES).forEach(eventType => {
+        const card = document.createElement('div');
+        card.className = `event-type-card ${gameState.selectedEventType === eventType.id ? 'selected' : ''}`;
+        card.dataset.eventType = eventType.id;
+        card.innerHTML = `<div class="event-type-icon">${eventType.icon}</div><div class="event-type-name">${eventType.name}</div><div class="event-type-cost">$${eventType.baseCost} | ${eventType.baseEnergy}⚡</div>`;
+        card.addEventListener('click', () => selectEventType(eventType.id));
+        elements.eventTypesContainer.appendChild(card);
+    });
+}
+
+function renderVenues() {
+    elements.venueOptionsContainer.innerHTML = '';
+    Object.values(VENUES).forEach(venue => {
+        const card = document.createElement('div');
+        card.className = `venue-card ${gameState.selectedVenue === venue.id ? 'selected' : ''}`;
+        card.dataset.venue = venue.id;
+        let costText = venue.cost > 0 ? `$${venue.cost}` : 'Free';
+        let warningHtml = venue.weatherRisk ? '<div class="venue-warning">⚠️ Weather dependent</div>' : '';
+        card.innerHTML = `<div class="venue-header"><span class="venue-icon">${venue.icon}</span><span class="venue-name">${venue.name}</span></div><div class="venue-details">${costText} | Cap: ${venue.capacity}</div>${warningHtml}`;
+        card.addEventListener('click', () => selectVenue(venue.id));
+        elements.venueOptionsContainer.appendChild(card);
+    });
+}
+
+function renderSliders() {
+    elements.foodSlider.value = gameState.foodBudget;
+    elements.foodCurrent.textContent = gameState.foodBudget;
+    elements.foodDescription.textContent = getFoodDescription(gameState.foodBudget);
+    elements.promotionSlider.value = gameState.promotionHours;
+    elements.promotionCurrent.textContent = gameState.promotionHours;
+    elements.promotionDescription.textContent = getPromotionDescription(gameState.promotionHours);
+    elements.personalSlider.value = gameState.personalTouchPoints;
+    elements.personalCurrent.textContent = gameState.personalTouchPoints;
+    elements.personalDescription.textContent = getPersonalDescription(gameState.personalTouchPoints);
+}
+
+function updateCostSummary() {
+    const affordability = checkAffordability();
+    const costs = affordability.costs;
+    elements.totalBudgetCost.textContent = `$${costs.budget}`;
+    elements.totalTimeCost.textContent = `${costs.time} hours`;
+    elements.totalEnergyCost.textContent = `${costs.energy} points`;
+    const budgetCard = document.querySelector('.resource-card.budget');
+    const timeCard = document.querySelector('.resource-card.time');
+    const energyCard = document.querySelector('.resource-card.energy');
+    budgetCard.classList.toggle('insufficient', !affordability.budget);
+    timeCard.classList.toggle('insufficient', !affordability.time);
+    energyCard.classList.toggle('insufficient', !affordability.energy);
+    elements.costWarnings.innerHTML = '';
+    if (!affordability.budget) addWarning('Not enough budget!');
+    if (!affordability.time) addWarning('Not enough time!');
+    if (!affordability.energy) addWarning('Not enough energy!');
+    elements.btnPlanEvent.disabled = !affordability.canAfford;
+}
+
+function addWarning(message) { const warning = document.createElement('div'); warning.className = 'cost-warning'; warning.textContent = message; elements.costWarnings.appendChild(warning); }
+
+function selectEventType(eventTypeId) { gameState.selectedEventType = eventTypeId; document.querySelectorAll('.event-type-card').forEach(card => card.classList.toggle('selected', card.dataset.eventType === eventTypeId)); updateCostSummary(); saveGame(); }
+function selectVenue(venueId) { gameState.selectedVenue = venueId; document.querySelectorAll('.venue-card').forEach(card => card.classList.toggle('selected', card.dataset.venue === venueId)); updateCostSummary(); saveGame(); }
+
+function handleFoodSliderChange(e) { gameState.foodBudget = parseInt(e.target.value); elements.foodCurrent.textContent = gameState.foodBudget; elements.foodDescription.textContent = getFoodDescription(gameState.foodBudget); updateCostSummary(); }
+function handlePromotionSliderChange(e) { gameState.promotionHours = parseInt(e.target.value); elements.promotionCurrent.textContent = gameState.promotionHours; elements.promotionDescription.textContent = getPromotionDescription(gameState.promotionHours); updateCostSummary(); }
+function handlePersonalSliderChange(e) { gameState.personalTouchPoints = parseInt(e.target.value); elements.personalCurrent.textContent = gameState.personalTouchPoints; elements.personalDescription.textContent = getPersonalDescription(gameState.personalTouchPoints); updateCostSummary(); }
+
+function renderRandomEventScreen(event) {
+    elements.randomEventIcon.textContent = event.icon;
+    elements.randomEventTitle.textContent = event.title;
+    elements.randomEventDescription.textContent = event.description;
+    elements.randomEventChoices.innerHTML = '';
+    event.choices.forEach((choice, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'random-choice-btn';
+        const costParts = [];
+        if (choice.cost.budget) costParts.push(`$${choice.cost.budget}`);
+        if (choice.cost.time) costParts.push(`${choice.cost.time}h time`);
+        if (choice.cost.energy) costParts.push(`${choice.cost.energy} energy`);
+        const costText = costParts.length > 0 ? `Cost: ${costParts.join(', ')}` : 'No cost';
+        const remaining = getRemainingResources();
+        const canAfford = (!choice.cost.budget || remaining.budget >= choice.cost.budget) && (!choice.cost.time || remaining.time >= choice.cost.time) && (!choice.cost.energy || remaining.energy >= choice.cost.energy);
+        btn.innerHTML = `<span class="choice-text">${choice.text}</span><span class="choice-cost">${costText}</span>`;
+        btn.disabled = !canAfford;
+        btn.addEventListener('click', () => handleRandomEventChoice(event, index));
+        elements.randomEventChoices.appendChild(btn);
+    });
+}
+
+function handleRandomEventChoice(event, choiceIndex) { currentEventModifiers = applyRandomEventChoice(event, choiceIndex); gameState.randomEventChoice = choiceIndex; executeAndShowResults(); }
+
+function executeAndShowResults() { const results = executeEvent(currentEventModifiers); showScreen('results'); renderResultsScreen(results); currentEventModifiers = {}; }
+
+function renderResultsScreen(results) {
+    animateAttendees(results.attendance.count);
+    elements.resultAttendance.textContent = results.attendance.count;
+    elements.resultAttendanceDetail.textContent = `${results.attendance.percentage}% of first-years`;
+    elements.resultHappiness.textContent = results.happiness.score;
+    elements.resultHappiness.className = 'stat-value';
+    if (results.happiness.score >= 70) elements.resultHappiness.classList.add('high');
+    else if (results.happiness.score >= 50) elements.resultHappiness.classList.add('medium');
+    else elements.resultHappiness.classList.add('low');
+    const repChange = results.reputationResult.change;
+    const repSign = repChange >= 0 ? '+' : '';
+    elements.resultReputationChange.textContent = `${repSign}${repChange}`;
+    elements.resultReputationChange.className = 'stat-value';
+    if (repChange > 0) elements.resultReputationChange.classList.add('positive');
+    else if (repChange < 0) elements.resultReputationChange.classList.add('negative');
+    renderHighlights(results.happiness.highlights, results.randomEventResult);
+    renderResultsSummary(results);
+    elements.btnNextWeek.textContent = gameState.week >= CONFIG.TOTAL_WEEKS ? 'View Semester Summary' : 'Continue to Next Week';
+}
+
+function animateAttendees(count) {
+    elements.attendeesAnimation.innerHTML = '';
+    const displayCount = Math.min(count, 50);
+    const icons = ['😊', '😄', '🙂', '😁', '🤗', '😎'];
+    for (let i = 0; i < displayCount; i++) { setTimeout(() => { const icon = document.createElement('span'); icon.className = 'attendee-icon'; icon.textContent = icons[Math.floor(Math.random() * icons.length)]; icon.style.animationDelay = `${i * 30}ms`; elements.attendeesAnimation.appendChild(icon); }, i * 30); }
+}
+
+function renderHighlights(highlights, randomEventResult) {
+    elements.eventHighlightsList.innerHTML = '';
+    if (randomEventResult) { const li = document.createElement('li'); li.textContent = randomEventResult; li.className = 'random-event-result'; elements.eventHighlightsList.appendChild(li); }
+    highlights.forEach(highlight => { const li = document.createElement('li'); li.textContent = highlight.text; li.className = highlight.positive ? 'positive' : 'negative'; elements.eventHighlightsList.appendChild(li); });
+    if (highlights.length < 2 && !randomEventResult) { const genericPositive = ['Students seemed to enjoy themselves.', 'The event went smoothly.', 'A few new faces showed up.']; const li = document.createElement('li'); li.textContent = genericPositive[Math.floor(Math.random() * genericPositive.length)]; elements.eventHighlightsList.appendChild(li); }
+}
+
+function renderResultsSummary(results) {
+    const eventType = EVENT_TYPES[gameState.selectedEventType];
+    let summary = '';
+    if (results.happiness.score >= 80) summary = `Your ${eventType.name} was a huge hit!`;
+    else if (results.happiness.score >= 65) summary = `The ${eventType.name} went well.`;
+    else if (results.happiness.score >= 50) summary = `The ${eventType.name} was decent.`;
+    else if (results.happiness.score >= 35) summary = `The ${eventType.name} had some issues.`;
+    else summary = `The ${eventType.name} didn't go as planned.`;
+    if (results.regularsResult.gained > 0) summary += ` You gained ${results.regularsResult.gained} new regular${results.regularsResult.gained > 1 ? 's' : ''}!`;
+    if (results.remainingBudget < 20) summary += ' Budget is running low.';
+    elements.resultsSummary.textContent = summary;
+}
+
+function renderSemesterEndScreen() {
+    const finalResults = calculateFinalScore();
+    elements.finalScore.textContent = finalResults.totalScore;
+    elements.finalRating.textContent = finalResults.rating;
+    elements.totalAttendance.textContent = finalResults.stats.totalAttendance;
+    elements.avgHappiness.textContent = finalResults.stats.avgHappiness;
+    elements.totalRegulars.textContent = finalResults.stats.finalRegulars;
+    elements.bestEvent.textContent = finalResults.stats.bestEvent || 'N/A';
+    renderWeekHistory();
+    clearSave();
+}
+
+function renderWeekHistory() {
+    elements.weekHistoryGrid.innerHTML = '';
+    gameState.weekHistory.forEach(week => {
+        const card = document.createElement('div');
+        card.className = 'week-history-card';
+        if (week.happiness >= 70) card.classList.add('good');
+        else if (week.happiness >= 50) card.classList.add('medium');
+        else card.classList.add('poor');
+        card.innerHTML = `<div class="week-history-number">W${week.week}</div><div class="week-history-happiness">${week.happiness}</div>`;
+        card.title = `Week ${week.week}: ${EVENT_TYPES[week.eventType].name}\nAttendance: ${week.attendance}\nHappiness: ${week.happiness}`;
+        elements.weekHistoryGrid.appendChild(card);
+    });
+}
+
+function handleNewGame() { initNewGame(); showScreen('planning'); renderPlanningScreen(); }
+function handleContinueGame() { if (loadGame()) { showScreen('planning'); renderPlanningScreen(); } }
+function handlePlanEvent() { const randomEvent = checkForRandomEvent(); if (randomEvent) { gameState.currentRandomEvent = randomEvent; showScreen('randomEvent'); renderRandomEventScreen(randomEvent); } else { executeAndShowResults(); } }
+function handleNextWeek() { if (gameState.week >= CONFIG.TOTAL_WEEKS) { showScreen('semesterEnd'); renderSemesterEndScreen(); } else { advanceWeek(); showScreen('planning'); renderPlanningScreen(); } }
+function handlePlayAgain() { showScreen('title'); initTitleScreen(); }
+
+function initEventListeners() {
+    elements.btnNewGame.addEventListener('click', handleNewGame);
+    elements.btnContinue.addEventListener('click', handleContinueGame);
+    elements.foodSlider.addEventListener('input', handleFoodSliderChange);
+    elements.promotionSlider.addEventListener('input', handlePromotionSliderChange);
+    elements.personalSlider.addEventListener('input', handlePersonalSliderChange);
+    elements.btnPlanEvent.addEventListener('click', handlePlanEvent);
+    elements.btnNextWeek.addEventListener('click', handleNextWeek);
+    elements.btnPlayAgain.addEventListener('click', handlePlayAgain);
+}
+
+function initUI() { initEventListeners(); initTitleScreen(); showScreen('title'); }
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initUI); } else { initUI(); }
+    </script>
+</body>
+</html>
