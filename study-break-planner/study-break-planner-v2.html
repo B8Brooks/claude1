@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Break Planner v2 - Student Advisor Simulation</title>
+    <style>
+:root {
+    --primary: #5B8C5A;
+    --primary-dark: #3D5C3C;
+    --primary-light: #7FB77E;
+    --secondary: #E8985E;
+    --secondary-light: #F4B183;
+    --accent: #6B5B95;
+    --accent-light: #9B8DC2;
+    --bg-light: #F5F5DC;
+    --bg-card: #FFFFFF;
+    --text-dark: #2C3E50;
+    --text-medium: #5D6D7E;
+    --text-light: #95A5A6;
+    --budget-color: #27AE60;
+    --time-color: #3498DB;
+    --energy-color: #F39C12;
+    --scout-color: #9B59B6;
+    --success: #27AE60;
+    --warning: #F39C12;
+    --danger: #E74C3C;
+    --info: #3498DB;
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-light) 0%, #E8E4D9 100%);
+    min-height: 100vh;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+#app { max-width: 900px; margin: 0 auto; padding: var(--spacing-md); min-height: 100vh; }
+.screen { display: none; animation: fadeIn 0.3s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.title-container { text-align: center; padding: var(--spacing-xl) var(--spacing-md); margin-top: 8vh; }
+.title-container h1 { font-size: 2.5rem; color: var(--primary-dark); margin-bottom: var(--spacing-sm); text-shadow: 2px 2px 0 rgba(255,255,255,0.8); }
+.subtitle { font-size: 1.2rem; color: var(--text-medium); margin-bottom: var(--spacing-lg); }
+.title-description { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-lg); margin-bottom: var(--spacing-xl); box-shadow: var(--shadow-md); }
+.title-description p { margin-bottom: var(--spacing-sm); color: var(--text-medium); }
+.title-description p:last-child { margin-bottom: 0; }
+.feature-list { text-align: left; margin: var(--spacing-md) 0; }
+.feature-list li { margin-bottom: var(--spacing-xs); }
+.title-buttons { display: flex; flex-direction: column; gap: var(--spacing-md); max-width: 300px; margin: 0 auto; }
+.btn { padding: var(--spacing-md) var(--spacing-lg); border: none; border-radius: var(--radius-md); font-size: 1rem; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); text-transform: uppercase; letter-spacing: 0.5px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: var(--shadow-sm); }
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.btn-secondary { background: var(--bg-card); color: var(--text-dark); border: 2px solid var(--primary); }
+.btn-secondary:hover:not(:disabled) { background: var(--primary-light); color: white; }
+.btn-small { padding: var(--spacing-sm) var(--spacing-md); font-size: 0.85rem; }
+.btn-large { padding: var(--spacing-lg) var(--spacing-xl); font-size: 1.1rem; width: 100%; }
+.game-header { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: var(--spacing-md) var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; gap: var(--spacing-md); }
+.week-indicator { display: flex; align-items: baseline; gap: var(--spacing-xs); }
+.week-label { font-size: 0.9rem; color: var(--text-medium); }
+.week-number { font-size: 2rem; font-weight: 700; color: var(--primary-dark); }
+.week-total { font-size: 1rem; color: var(--text-light); }
+.semester-phase { background: var(--accent-light); color: white; padding: var(--spacing-xs) var(--spacing-md); border-radius: var(--radius-xl); font-size: 0.85rem; font-weight: 600; }
+.semester-phase.midterms { background: var(--warning); }
+.semester-phase.finals { background: var(--danger); }
+.reputation-display { display: flex; align-items: center; gap: var(--spacing-sm); }
+.reputation-label { color: var(--text-medium); font-size: 0.9rem; }
+.reputation-status { font-weight: 600; color: var(--primary); }
+.resource-panel { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg); box-shadow: var(--shadow-sm); }
+.resource-panel h2 { font-size: 1.1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-md); }
+.resource-card { display: flex; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md); border-radius: var(--radius-md); background: var(--bg-light); }
+.resource-icon { font-size: 1.8rem; }
+.resource-info { flex: 1; }
+.resource-name { display: block; font-weight: 600; font-size: 0.85rem; color: var(--text-dark); margin-bottom: var(--spacing-xs); }
+.resource-bar-container { height: 8px; background: #DDD; border-radius: var(--radius-sm); overflow: hidden; margin-bottom: var(--spacing-xs); }
+.resource-bar { height: 100%; border-radius: var(--radius-sm); transition: width var(--transition-normal); }
+.resource-card.budget .resource-bar { background: linear-gradient(90deg, var(--budget-color), #2ECC71); }
+.resource-card.time .resource-bar { background: linear-gradient(90deg, var(--time-color), #5DADE2); }
+.resource-card.energy .resource-bar { background: linear-gradient(90deg, var(--energy-color), #F4D03F); }
+.resource-card.scout .resource-bar { background: linear-gradient(90deg, var(--scout-color), #BB8FCE); }
+.resource-value { font-size: 0.8rem; color: var(--text-medium); }
+.resource-card.insufficient .resource-bar { background: var(--danger) !important; }
+.resource-card.insufficient .resource-value { color: var(--danger); font-weight: 600; }
+
+/* Personas Section */
+.personas-panel { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg); box-shadow: var(--shadow-sm); }
+.personas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md); }
+.personas-header h2 { font-size: 1.1rem; color: var(--text-dark); }
+.crowd-hint { font-size: 0.85rem; color: var(--accent); font-style: italic; }
+.personas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--spacing-sm); }
+.persona-card { padding: var(--spacing-md); border-radius: var(--radius-md); text-align: center; transition: all var(--transition-fast); border: 2px solid transparent; }
+.persona-card.revealed { background: var(--bg-light); }
+.persona-card.hidden { background: #E0E0E0; cursor: pointer; }
+.persona-card.hidden:hover { background: #D0D0D0; border-color: var(--scout-color); }
+.persona-card.match { border-color: var(--success); background: rgba(39, 174, 96, 0.1); }
+.persona-card.mismatch { border-color: var(--danger); background: rgba(231, 76, 60, 0.1); }
+.persona-icon { font-size: 2rem; margin-bottom: var(--spacing-xs); }
+.persona-name { font-weight: 600; font-size: 0.8rem; color: var(--text-dark); }
+.persona-pref { font-size: 0.7rem; color: var(--text-medium); margin-top: var(--spacing-xs); }
+.persona-hidden-text { font-size: 0.75rem; color: var(--text-medium); }
+.scout-cost { font-size: 0.7rem; color: var(--scout-color); margin-top: var(--spacing-xs); }
+
+.planning-section { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg); box-shadow: var(--shadow-sm); }
+.planning-section h2 { font-size: 1.3rem; color: var(--text-dark); margin-bottom: var(--spacing-lg); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--bg-light); }
+.planning-category { margin-bottom: var(--spacing-xl); }
+.planning-category:last-child { margin-bottom: 0; }
+.planning-category h3 { font-size: 1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.event-types-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--spacing-sm); }
+.event-type-card { padding: var(--spacing-md); border: 2px solid #E0E0E0; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); text-align: center; background: var(--bg-card); }
+.event-type-card:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+.event-type-card.selected { border-color: var(--primary); background: linear-gradient(135deg, rgba(91, 140, 90, 0.1) 0%, rgba(91, 140, 90, 0.05) 100%); box-shadow: var(--shadow-sm); }
+.event-type-icon { font-size: 2rem; margin-bottom: var(--spacing-xs); }
+.event-type-name { font-weight: 600; font-size: 0.85rem; color: var(--text-dark); margin-bottom: var(--spacing-xs); }
+.event-type-cost { font-size: 0.75rem; color: var(--text-medium); }
+.event-type-appeal { font-size: 0.7rem; color: var(--success); margin-top: var(--spacing-xs); }
+.venue-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-sm); }
+.venue-card { padding: var(--spacing-md); border: 2px solid #E0E0E0; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); background: var(--bg-card); }
+.venue-card:hover { border-color: var(--primary-light); }
+.venue-card.selected { border-color: var(--primary); background: linear-gradient(135deg, rgba(91, 140, 90, 0.1) 0%, rgba(91, 140, 90, 0.05) 100%); }
+.venue-header { display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs); }
+.venue-icon { font-size: 1.5rem; }
+.venue-name { font-weight: 600; font-size: 0.9rem; }
+.venue-details { font-size: 0.8rem; color: var(--text-medium); }
+.venue-warning { font-size: 0.75rem; color: var(--warning); margin-top: var(--spacing-xs); }
+.slider-container { padding: var(--spacing-sm) 0; }
+.slider-container input[type="range"] { width: 100%; height: 8px; border-radius: var(--radius-sm); background: #DDD; outline: none; -webkit-appearance: none; margin-bottom: var(--spacing-sm); }
+.slider-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: var(--shadow-sm); }
+.slider-container input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--primary); cursor: pointer; border: none; }
+.slider-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-light); }
+.slider-value { font-weight: 600; color: var(--primary-dark); font-size: 0.9rem; }
+.slider-description { text-align: center; color: var(--text-medium); font-size: 0.85rem; font-style: italic; margin-top: var(--spacing-sm); }
+.cost-summary { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-lg); box-shadow: var(--shadow-sm); }
+.cost-summary h2 { font-size: 1.1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.cost-breakdown { background: var(--bg-light); border-radius: var(--radius-md); padding: var(--spacing-md); margin-bottom: var(--spacing-md); }
+.cost-row { display: flex; justify-content: space-between; padding: var(--spacing-xs) 0; font-size: 0.9rem; }
+.cost-row span:last-child { font-weight: 600; }
+.cost-warnings { margin-bottom: var(--spacing-md); }
+.cost-warning { background: rgba(231, 76, 60, 0.1); color: var(--danger); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: var(--spacing-xs); }
+
+/* Challenge Screen */
+.challenge-container { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-xl); text-align: center; max-width: 500px; margin: 8vh auto 0; box-shadow: var(--shadow-lg); }
+.challenge-icon { font-size: 4rem; margin-bottom: var(--spacing-md); animation: shake 0.5s ease; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.challenge-container h2 { color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.challenge-description { color: var(--text-medium); font-size: 1rem; margin-bottom: var(--spacing-lg); line-height: 1.6; }
+.challenge-choices { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.challenge-choice-btn { padding: var(--spacing-md) var(--spacing-lg); border: 2px solid var(--secondary); border-radius: var(--radius-md); background: var(--bg-card); cursor: pointer; transition: all var(--transition-fast); text-align: left; }
+.challenge-choice-btn:hover { background: var(--secondary); color: white; }
+.challenge-choice-btn:hover .choice-cost { color: rgba(255,255,255,0.8); }
+.challenge-choice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.choice-text { display: block; font-weight: 600; margin-bottom: var(--spacing-xs); }
+.choice-cost { font-size: 0.85rem; color: var(--text-medium); }
+
+/* Random Event Screen */
+.random-event-container { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-xl); text-align: center; max-width: 500px; margin: 8vh auto 0; box-shadow: var(--shadow-lg); }
+.random-event-icon { font-size: 4rem; margin-bottom: var(--spacing-md); animation: bounce 0.5s ease infinite alternate; }
+@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+.random-event-container h2 { color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.random-event-description { color: var(--text-medium); font-size: 1.1rem; margin-bottom: var(--spacing-xl); line-height: 1.8; }
+.random-event-choices { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.random-choice-btn { padding: var(--spacing-md) var(--spacing-lg); border: 2px solid var(--primary); border-radius: var(--radius-md); background: var(--bg-card); cursor: pointer; transition: all var(--transition-fast); text-align: left; }
+.random-choice-btn:hover { background: var(--primary); color: white; }
+.random-choice-btn:hover .choice-cost { color: rgba(255,255,255,0.8); }
+.random-choice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Results Screen */
+.results-container { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-xl); box-shadow: var(--shadow-md); }
+.results-container h2 { text-align: center; color: var(--text-dark); margin-bottom: var(--spacing-lg); font-size: 1.8rem; }
+.results-visual { text-align: center; margin-bottom: var(--spacing-xl); min-height: 80px; }
+.attendees-animation { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--spacing-xs); }
+.attendee-icon { font-size: 1.5rem; animation: popIn 0.3s ease backwards; }
+@keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.results-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-md); margin-bottom: var(--spacing-xl); }
+.stat-card { text-align: center; padding: var(--spacing-lg); background: var(--bg-light); border-radius: var(--radius-md); }
+.stat-icon { font-size: 2rem; margin-bottom: var(--spacing-sm); }
+.stat-label { display: block; font-size: 0.85rem; color: var(--text-medium); margin-bottom: var(--spacing-xs); }
+.stat-value { display: block; font-size: 2rem; font-weight: 700; color: var(--text-dark); }
+.stat-card.attendance .stat-value { color: var(--info); }
+.stat-card.happiness .stat-value { color: var(--success); }
+.stat-card.happiness .stat-value.low { color: var(--danger); }
+.stat-card.happiness .stat-value.medium { color: var(--warning); }
+.stat-card.reputation-change .stat-value { color: var(--accent); }
+.stat-card.reputation-change .stat-value.positive { color: var(--success); }
+.stat-card.reputation-change .stat-value.negative { color: var(--danger); }
+.stat-detail { font-size: 0.8rem; color: var(--text-light); }
+.event-highlights { margin-bottom: var(--spacing-xl); }
+.event-highlights h3 { font-size: 1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.event-highlights ul { list-style: none; }
+.event-highlights li { padding: var(--spacing-sm) var(--spacing-md); background: var(--bg-light); border-radius: var(--radius-sm); margin-bottom: var(--spacing-xs); font-size: 0.9rem; color: var(--text-medium); border-left: 3px solid var(--primary); }
+.event-highlights li.negative { border-left-color: var(--danger); }
+.event-highlights li.positive { border-left-color: var(--success); }
+.event-highlights li.challenge { border-left-color: var(--secondary); }
+.results-summary { text-align: center; padding: var(--spacing-md); background: linear-gradient(135deg, rgba(91, 140, 90, 0.1) 0%, rgba(91, 140, 90, 0.05) 100%); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg); font-style: italic; color: var(--text-medium); }
+
+/* Semester End */
+.semester-summary-container { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-xl); box-shadow: var(--shadow-lg); }
+.semester-summary-container h2 { text-align: center; font-size: 2rem; color: var(--text-dark); margin-bottom: var(--spacing-xl); }
+.final-score-display { text-align: center; padding: var(--spacing-xl); background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: var(--radius-lg); color: white; margin-bottom: var(--spacing-xl); }
+.final-score-label { font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; }
+.final-score-value { font-size: 4rem; font-weight: 700; line-height: 1.2; }
+.final-rating { font-size: 1.3rem; margin-top: var(--spacing-sm); }
+.semester-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-md); margin-bottom: var(--spacing-xl); }
+.semester-stat { text-align: center; padding: var(--spacing-md); background: var(--bg-light); border-radius: var(--radius-md); }
+.semester-stat-label { display: block; font-size: 0.85rem; color: var(--text-medium); margin-bottom: var(--spacing-xs); }
+.semester-stat-value { display: block; font-size: 1.5rem; font-weight: 700; color: var(--primary-dark); }
+.week-history { margin-bottom: var(--spacing-xl); }
+.week-history h3 { font-size: 1rem; color: var(--text-dark); margin-bottom: var(--spacing-md); }
+.week-history-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--spacing-xs); }
+.week-history-card { padding: var(--spacing-sm); background: var(--bg-light); border-radius: var(--radius-sm); text-align: center; font-size: 0.75rem; cursor: help; }
+.week-history-card.good { background: rgba(39, 174, 96, 0.2); border: 1px solid var(--success); }
+.week-history-card.medium { background: rgba(243, 156, 18, 0.2); border: 1px solid var(--warning); }
+.week-history-card.poor { background: rgba(231, 76, 60, 0.2); border: 1px solid var(--danger); }
+.week-history-number { font-weight: 700; color: var(--text-dark); }
+.week-history-happiness { color: var(--text-medium); }
+.end-buttons { display: flex; justify-content: center; }
+
+@media (max-width: 768px) {
+    .title-container h1 { font-size: 1.8rem; }
+    .game-header { flex-direction: column; text-align: center; }
+    .resources-grid { grid-template-columns: repeat(2, 1fr); }
+    .personas-grid { grid-template-columns: repeat(3, 1fr); }
+    .event-types-grid { grid-template-columns: repeat(2, 1fr); }
+    .venue-options { grid-template-columns: 1fr; }
+    .results-stats { grid-template-columns: 1fr; }
+    .semester-stats { grid-template-columns: 1fr; }
+    .week-history-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 480px) {
+    #app { padding: var(--spacing-sm); }
+    .resources-grid { grid-template-columns: 1fr; }
+    .personas-grid { grid-template-columns: repeat(2, 1fr); }
+    .event-types-grid { grid-template-columns: 1fr; }
+    .week-history-grid { grid-template-columns: repeat(3, 1fr); }
+    .final-score-value { font-size: 3rem; }
+}
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="screen-title" class="screen active">
+            <div class="title-container">
+                <h1>📚 Study Break Planner</h1>
+                <p class="subtitle">A Student Advisor Simulation - v2</p>
+                <div class="title-description">
+                    <p>Plan weekly study breaks for first-year students. Manage resources, learn student preferences, and handle unexpected challenges!</p>
+                    <ul class="feature-list">
+                        <li>🎯 6 student personas to discover and please</li>
+                        <li>⚡ Resource trade-off challenges during events</li>
+                        <li>🔍 Scout points to uncover student preferences</li>
+                    </ul>
+                </div>
+                <div class="title-buttons">
+                    <button id="btn-new-game" class="btn btn-primary">New Game</button>
+                    <button id="btn-continue" class="btn btn-secondary" disabled>Continue Game</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-planning" class="screen">
+            <header class="game-header">
+                <div class="week-indicator">
+                    <span class="week-label">Week</span>
+                    <span id="current-week" class="week-number">1</span>
+                    <span class="week-total">/ 12</span>
+                </div>
+                <div class="semester-phase" id="semester-phase">Early Semester</div>
+                <div class="reputation-display">
+                    <span class="reputation-label">Rep:</span>
+                    <span id="reputation-status" class="reputation-status">Unknown</span>
+                </div>
+            </header>
+
+            <section class="resource-panel">
+                <h2>Resources</h2>
+                <div class="resources-grid">
+                    <div class="resource-card budget">
+                        <div class="resource-icon">💰</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Budget</span>
+                            <div class="resource-bar-container"><div class="resource-bar" id="budget-bar"></div></div>
+                            <span class="resource-value">$<span id="budget-current">150</span>/<span id="budget-max">200</span></span>
+                        </div>
+                    </div>
+                    <div class="resource-card time">
+                        <div class="resource-icon">⏰</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Time</span>
+                            <div class="resource-bar-container"><div class="resource-bar" id="time-bar"></div></div>
+                            <span class="resource-value"><span id="time-current">8</span>/8 hrs</span>
+                        </div>
+                    </div>
+                    <div class="resource-card energy">
+                        <div class="resource-icon">⚡</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Energy</span>
+                            <div class="resource-bar-container"><div class="resource-bar" id="energy-bar"></div></div>
+                            <span class="resource-value"><span id="energy-current">10</span>/10</span>
+                        </div>
+                    </div>
+                    <div class="resource-card scout">
+                        <div class="resource-icon">🔍</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Scout Points</span>
+                            <div class="resource-bar-container"><div class="resource-bar" id="scout-bar"></div></div>
+                            <span class="resource-value"><span id="scout-current">2</span> pts</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="personas-panel">
+                <div class="personas-header">
+                    <h2>Student Crowd This Week</h2>
+                    <span class="crowd-hint" id="crowd-hint">Tap hidden personas to scout them</span>
+                </div>
+                <div class="personas-grid" id="personas-grid"></div>
+            </section>
+
+            <section class="planning-section">
+                <h2>Plan Your Event</h2>
+                <div class="planning-category">
+                    <h3>Event Type</h3>
+                    <div class="event-types-grid" id="event-types"></div>
+                </div>
+                <div class="planning-category">
+                    <h3>Venue</h3>
+                    <div class="venue-options" id="venue-options"></div>
+                </div>
+                <div class="planning-category">
+                    <h3>Food & Refreshments</h3>
+                    <div class="slider-container">
+                        <input type="range" id="food-slider" min="0" max="100" value="30">
+                        <div class="slider-labels">
+                            <span>Basic ($0)</span>
+                            <span class="slider-value">$<span id="food-current">30</span></span>
+                            <span>Premium ($100)</span>
+                        </div>
+                        <p class="slider-description" id="food-description">Decent snacks</p>
+                    </div>
+                </div>
+                <div class="planning-category">
+                    <h3>Promotion</h3>
+                    <div class="slider-container">
+                        <input type="range" id="promotion-slider" min="0" max="5" value="2">
+                        <div class="slider-labels">
+                            <span>0h</span>
+                            <span class="slider-value"><span id="promotion-current">2</span>h</span>
+                            <span>5h</span>
+                        </div>
+                        <p class="slider-description" id="promotion-description">Posters + social media</p>
+                    </div>
+                </div>
+                <div class="planning-category">
+                    <h3>Personal Touches</h3>
+                    <div class="slider-container">
+                        <input type="range" id="personal-slider" min="0" max="4" value="1">
+                        <div class="slider-labels">
+                            <span>0</span>
+                            <span class="slider-value"><span id="personal-current">1</span> pt</span>
+                            <span>4</span>
+                        </div>
+                        <p class="slider-description" id="personal-description">Remember a few names</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="cost-summary">
+                <h2>Summary</h2>
+                <div class="cost-breakdown">
+                    <div class="cost-row"><span>Budget:</span><span id="total-budget-cost">$0</span></div>
+                    <div class="cost-row"><span>Time:</span><span id="total-time-cost">0h</span></div>
+                    <div class="cost-row"><span>Energy:</span><span id="total-energy-cost">0</span></div>
+                </div>
+                <div class="cost-warnings" id="cost-warnings"></div>
+                <button id="btn-plan-event" class="btn btn-primary btn-large">Run Event</button>
+            </section>
+        </div>
+
+        <div id="screen-challenge" class="screen">
+            <div class="challenge-container">
+                <div class="challenge-icon" id="challenge-icon">⚠️</div>
+                <h2 id="challenge-title">Challenge!</h2>
+                <p id="challenge-description" class="challenge-description"></p>
+                <div class="challenge-choices" id="challenge-choices"></div>
+            </div>
+        </div>
+
+        <div id="screen-random-event" class="screen">
+            <div class="random-event-container">
+                <div class="random-event-icon" id="random-event-icon">⚠️</div>
+                <h2 id="random-event-title">Event!</h2>
+                <p id="random-event-description" class="random-event-description"></p>
+                <div class="random-event-choices" id="random-event-choices"></div>
+            </div>
+        </div>
+
+        <div id="screen-results" class="screen">
+            <div class="results-container">
+                <h2>Event Complete!</h2>
+                <div class="results-visual"><div class="attendees-animation" id="attendees-animation"></div></div>
+                <div class="results-stats">
+                    <div class="stat-card attendance">
+                        <div class="stat-icon">👥</div>
+                        <span class="stat-label">Attendance</span>
+                        <span class="stat-value" id="result-attendance">0</span>
+                        <span class="stat-detail" id="result-attendance-detail">students</span>
+                    </div>
+                    <div class="stat-card happiness">
+                        <div class="stat-icon">😊</div>
+                        <span class="stat-label">Happiness</span>
+                        <span class="stat-value" id="result-happiness">0</span>
+                        <span class="stat-detail">/ 100</span>
+                    </div>
+                    <div class="stat-card reputation-change">
+                        <div class="stat-icon">📈</div>
+                        <span class="stat-label">Reputation</span>
+                        <span class="stat-value" id="result-reputation-change">+0</span>
+                    </div>
+                </div>
+                <div class="event-highlights">
+                    <h3>Highlights</h3>
+                    <ul id="event-highlights-list"></ul>
+                </div>
+                <div class="results-summary" id="results-summary"></div>
+                <button id="btn-next-week" class="btn btn-primary btn-large">Next Week</button>
+            </div>
+        </div>
+
+        <div id="screen-semester-end" class="screen">
+            <div class="semester-summary-container">
+                <h2>Semester Complete!</h2>
+                <div class="final-score-display">
+                    <div class="final-score-label">Final Score</div>
+                    <div class="final-score-value" id="final-score">0</div>
+                    <div class="final-rating" id="final-rating">Novice</div>
+                </div>
+                <div class="semester-stats">
+                    <div class="semester-stat"><span class="semester-stat-label">Total Attendance</span><span class="semester-stat-value" id="total-attendance">0</span></div>
+                    <div class="semester-stat"><span class="semester-stat-label">Avg Happiness</span><span class="semester-stat-value" id="avg-happiness">0</span></div>
+                    <div class="semester-stat"><span class="semester-stat-label">Regulars</span><span class="semester-stat-value" id="total-regulars">0</span></div>
+                    <div class="semester-stat"><span class="semester-stat-label">Personas Found</span><span class="semester-stat-value" id="personas-found">0</span></div>
+                </div>
+                <div class="week-history">
+                    <h3>Timeline</h3>
+                    <div class="week-history-grid" id="week-history-grid"></div>
+                </div>
+                <div class="end-buttons"><button id="btn-play-again" class="btn btn-primary">Play Again</button></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ========== CONFIG ==========
+const CONFIG = {
+    TOTAL_WEEKS: 12, FIRST_YEAR_CLASS_SIZE: 500, WEEKLY_BUDGET: 150, MAX_SAVINGS: 50,
+    WEEKLY_TIME: 8, WEEKLY_ENERGY: 10, ENERGY_PENALTY: 3, RANDOM_EVENT_CHANCE: 0.25,
+    REPUTATION_MIN: 0, REPUTATION_MAX: 100, REPUTATION_START: 50,
+    REGULARS_GROWTH_RATE: 0.15, REGULARS_RETENTION_RATE: 0.85,
+    MIDTERM_WEEKS: [4, 5, 9, 10], FINALS_WEEK: 12,
+    WEEKLY_SCOUT_POINTS: 1, STARTING_SCOUT_POINTS: 2, SCOUT_COST: 1
+};
+
+// ========== PERSONAS ==========
+const PERSONAS = {
+    social_butterfly: { id: 'social_butterfly', name: 'Social Butterfly', icon: '🦋', likes: ['themed_party', 'game_night'], dislikes: ['study_snacks', 'wellness'], prefText: 'Loves parties & games', weight: 0.18 },
+    stressed_achiever: { id: 'stressed_achiever', name: 'Stressed Achiever', icon: '📖', likes: ['study_snacks', 'wellness'], dislikes: ['themed_party'], prefText: 'Needs calm & productivity', weight: 0.2 },
+    homesick_freshman: { id: 'homesick_freshman', name: 'Homesick Freshman', icon: '🏠', likes: ['pizza_chill', 'wellness'], dislikes: ['outdoor_activity'], prefText: 'Wants cozy & comforting', weight: 0.15 },
+    gamer: { id: 'gamer', name: 'The Gamer', icon: '🎮', likes: ['game_night'], dislikes: ['outdoor_activity', 'wellness'], prefText: 'Lives for game nights', weight: 0.15 },
+    fitness_enthusiast: { id: 'fitness_enthusiast', name: 'Fitness Fan', icon: '💪', likes: ['outdoor_activity', 'wellness'], dislikes: ['pizza_chill'], prefText: 'Active & health-focused', weight: 0.15 },
+    foodie: { id: 'foodie', name: 'The Foodie', icon: '🍕', likes: ['pizza_chill', 'themed_party'], dislikes: [], prefText: 'All about the snacks', foodSensitive: true, weight: 0.17 }
+};
+
+// ========== EVENT TYPES ==========
+const EVENT_TYPES = {
+    pizza_chill: { id: 'pizza_chill', name: 'Pizza & Chill', icon: '🍕', baseCost: 40, baseEnergy: 3, baseTime: 1, baseAppeal: 60, crowdTolerance: 0.9 },
+    game_night: { id: 'game_night', name: 'Game Night', icon: '🎮', baseCost: 50, baseEnergy: 5, baseTime: 2, baseAppeal: 75, crowdTolerance: 0.7 },
+    outdoor_activity: { id: 'outdoor_activity', name: 'Outdoor Activity', icon: '🏃', baseCost: 25, baseEnergy: 7, baseTime: 2, baseAppeal: 70, crowdTolerance: 1.0, weatherDependent: true },
+    themed_party: { id: 'themed_party', name: 'Themed Party', icon: '🎉', baseCost: 80, baseEnergy: 6, baseTime: 3, baseAppeal: 85, crowdTolerance: 0.8 },
+    wellness: { id: 'wellness', name: 'Wellness', icon: '🧘', baseCost: 35, baseEnergy: 4, baseTime: 2, baseAppeal: 55, crowdTolerance: 0.5, stressRelief: true },
+    study_snacks: { id: 'study_snacks', name: 'Study + Snacks', icon: '📚', baseCost: 30, baseEnergy: 3, baseTime: 1, baseAppeal: 50, crowdTolerance: 0.6, stressRelief: true }
+};
+
+const VENUES = {
+    common_room: { id: 'common_room', name: 'Common Room', icon: '🏠', cost: 0, capacity: 30, vibeBonus: 0, weatherRisk: false },
+    reserved_lounge: { id: 'reserved_lounge', name: 'Reserved Lounge', icon: '🛋️', cost: 25, capacity: 50, vibeBonus: 10, weatherRisk: false },
+    outdoor_quad: { id: 'outdoor_quad', name: 'Outdoor Quad', icon: '🌳', cost: 0, capacity: 100, vibeBonus: 5, weatherRisk: true }
+};
+
+// ========== CHALLENGES (Resource Trade-offs) ==========
+const CHALLENGES = [
+    { id: 'food_late', title: 'Food Delivery Late!', icon: '🍕', description: 'The food order is running behind. Your event starts soon!',
+      options: [
+        { text: 'Pick it up yourself', cost: { energy: 2 }, resultText: 'You rushed to get the food in time.' },
+        { text: 'Pay for rush delivery', cost: { budget: 25 }, resultText: 'Rush delivery saved the day.' }
+      ]},
+    { id: 'venue_setup', title: 'Venue Needs Extra Setup!', icon: '🪑', description: 'The previous group left a mess. The space needs work.',
+      options: [
+        { text: 'Clean it yourself', cost: { energy: 2, time: 1 }, resultText: 'You rolled up your sleeves and got it done.' },
+        { text: 'Hire quick help', cost: { budget: 30 }, resultText: 'Hired hands made quick work of it.' }
+      ]},
+    { id: 'sound_broken', title: 'Sound System Issues!', icon: '🔊', description: 'The speakers are acting up and music is part of your plan.',
+      options: [
+        { text: 'Troubleshoot it', cost: { energy: 3, time: 1 }, resultText: 'After some tinkering, you got it working.' },
+        { text: 'Rent a replacement', cost: { budget: 35 }, resultText: 'A quick rental saved the vibe.' }
+      ]},
+    { id: 'low_supplies', title: 'Running Low on Supplies!', icon: '📦', description: 'You underestimated how many cups and plates you need.',
+      options: [
+        { text: 'Make a quick run', cost: { energy: 2 }, resultText: 'A sprint to the store solved it.' },
+        { text: 'Order delivery', cost: { budget: 15 }, resultText: 'Delivery arrived just in time.' }
+      ]},
+    { id: 'helper_sick', title: 'Your Helper Called in Sick!', icon: '🤒', description: 'The student who was going to help can\'t make it.',
+      options: [
+        { text: 'Handle it solo', cost: { energy: 3 }, resultText: 'You powered through alone.' },
+        { text: 'Call in a favor', cost: { time: 1 }, resultText: 'A quick call found a replacement.' }
+      ]},
+    { id: 'promo_flop', title: 'Promotion Isn\'t Working!', icon: '📢', description: 'Your posters got taken down and social media reach is low.',
+      options: [
+        { text: 'Door-to-door outreach', cost: { energy: 2, time: 1 }, resultText: 'Personal invites made a difference.' },
+        { text: 'Boost the post', cost: { budget: 20 }, resultText: 'A small ad spend increased reach.' }
+      ]}
+];
+
+// ========== RANDOM EVENTS ==========
+const RANDOM_EVENTS = [
+    { id: 'sponsor_offer', title: 'Sponsorship Offer!', icon: '🎁', description: 'A local cafe wants to sponsor with free drinks!',
+      choices: [
+        { text: 'Accept', cost: {}, effect: { budget: 35, happiness: 5 }, resultText: 'Free drinks were a hit!' },
+        { text: 'Decline (ad-free)', cost: {}, effect: { happiness: 3 }, resultText: 'Students liked the authentic vibe.' }
+      ]},
+    { id: 'viral_post', title: 'Going Viral!', icon: '📱', description: 'Your event post is trending on campus!',
+      choices: [
+        { text: 'Lean into it', cost: { time: 1 }, effect: { attendance: 1.3, reputation: 5 }, resultText: 'The hype brought a crowd!' },
+        { text: 'Stay humble', cost: {}, effect: { attendance: 1.1 }, resultText: 'Word spread organically.' }
+      ], condition: (s) => s.reputation >= 55 },
+    { id: 'special_guest', title: 'Special Guest!', icon: '⭐', description: 'A popular senior offers to stop by!',
+      choices: [
+        { text: 'Welcome them', cost: { energy: 1 }, effect: { attendance: 1.2, happiness: 8 }, resultText: 'The guest was a big draw!' },
+        { text: 'Keep it intimate', cost: {}, effect: {}, resultText: 'You kept the cozy vibe.' }
+      ]},
+    { id: 'rain_warning', title: 'Rain Warning!', icon: '🌧️', description: 'Weather looks bad for your outdoor event.',
+      choices: [
+        { text: 'Move inside', cost: { budget: 20 }, effect: { venueCapacity: -0.3 }, resultText: 'Smaller but dry!' },
+        { text: 'Risk it', cost: {}, effect: { weatherRoll: true }, resultText: '' }
+      ], condition: (s) => s.selectedVenue === 'outdoor_quad' }
+];
+
+const PROMO_LEVELS = [
+    { hours: 0, desc: 'Word of mouth only', mult: 0.6 },
+    { hours: 1, desc: 'A few posters', mult: 0.8 },
+    { hours: 2, desc: 'Posters + social media', mult: 1.0 },
+    { hours: 3, desc: 'Active campaign', mult: 1.2 },
+    { hours: 4, desc: 'Full outreach', mult: 1.4 },
+    { hours: 5, desc: 'Maximum buzz', mult: 1.6 }
+];
+
+const FOOD_LEVELS = [
+    { min: 0, max: 15, desc: 'Water & crackers', quality: 0.5 },
+    { min: 16, max: 35, desc: 'Chips & drinks', quality: 0.7 },
+    { min: 36, max: 55, desc: 'Decent snacks', quality: 0.9 },
+    { min: 56, max: 75, desc: 'Good spread', quality: 1.1 },
+    { min: 76, max: 90, desc: 'Great variety', quality: 1.25 },
+    { min: 91, max: 100, desc: 'Premium catering', quality: 1.4 }
+];
+
+const PERSONAL_LEVELS = [
+    { pts: 0, desc: 'No engagement', bonus: 0 },
+    { pts: 1, desc: 'Remember a few names', bonus: 5 },
+    { pts: 2, desc: 'Follow up with regulars', bonus: 12 },
+    { pts: 3, desc: 'Personal welcomes', bonus: 20 },
+    { pts: 4, desc: 'Deep connections', bonus: 30 }
+];
+
+const REP_MSGS = [
+    { min: 0, max: 25, msg: 'Struggling' }, { min: 26, max: 45, msg: 'Unknown' },
+    { min: 46, max: 60, msg: 'Building rep' }, { min: 61, max: 75, msg: 'Popular' },
+    { min: 76, max: 90, msg: 'Campus star' }, { min: 91, max: 100, msg: 'Legendary' }
+];
+
+// ========== GAME STATE ==========
+let G = {}; // Game state
+let pendingChallenges = [];
+let eventModifiers = {};
+let highlightsFromChallenges = [];
+
+function newGame() {
+    G = {
+        week: 1, budget: CONFIG.WEEKLY_BUDGET, time: CONFIG.WEEKLY_TIME, energy: CONFIG.WEEKLY_ENERGY,
+        scoutPoints: CONFIG.STARTING_SCOUT_POINTS, reputation: CONFIG.REPUTATION_START, regulars: 0,
+        lastHappiness: 50, selectedEvent: 'pizza_chill', selectedVenue: 'common_room',
+        food: 30, promo: 2, personal: 1,
+        // Personas: 2 revealed at start, rest hidden
+        revealedPersonas: ['social_butterfly', 'foodie'],
+        weekCrowd: [], // Generated each week
+        history: [], totalAttendance: 0, totalHappiness: 0, endedZeroEnergy: false
+    };
+    generateWeekCrowd();
+    save();
+}
+
+function save() { try { localStorage.setItem('sbp_v2', JSON.stringify(G)); } catch(e){} }
+function load() { try { const s = localStorage.getItem('sbp_v2'); if(s) { G = JSON.parse(s); return true; } } catch(e){} return false; }
+function hasSave() { try { const s = localStorage.getItem('sbp_v2'); return s && JSON.parse(s).week <= CONFIG.TOTAL_WEEKS; } catch(e){ return false; } }
+function clearSave() { try { localStorage.removeItem('sbp_v2'); } catch(e){} }
+
+function generateWeekCrowd() {
+    // Pick 3-4 personas weighted by their weight, with some randomness
+    const all = Object.values(PERSONAS);
+    const crowd = [];
+    const count = 3 + (Math.random() > 0.5 ? 1 : 0);
+    const pool = [...all];
+    for (let i = 0; i < count && pool.length > 0; i++) {
+        const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+        let r = Math.random() * totalWeight;
+        for (let j = 0; j < pool.length; j++) {
+            r -= pool[j].weight;
+            if (r <= 0) {
+                crowd.push(pool[j].id);
+                pool.splice(j, 1);
+                break;
+            }
+        }
+    }
+    G.weekCrowd = crowd;
+}
+
+function getCosts() {
+    const ev = EVENT_TYPES[G.selectedEvent];
+    const ve = VENUES[G.selectedVenue];
+    return { budget: ev.baseCost + ve.cost + G.food, time: ev.baseTime + G.promo, energy: ev.baseEnergy + G.personal };
+}
+
+function canAfford() {
+    const c = getCosts();
+    return { budget: G.budget >= c.budget, time: G.time >= c.time, energy: G.energy >= c.energy,
+             ok: G.budget >= c.budget && G.time >= c.time && G.energy >= c.energy, costs: c };
+}
+
+function getRemaining() { const c = getCosts(); return { budget: G.budget - c.budget, time: G.time - c.time, energy: G.energy - c.energy }; }
+
+function getPhase() {
+    if (G.week === CONFIG.FINALS_WEEK) return { name: 'Finals', css: 'finals', demand: 1.5, diff: 1.4 };
+    if (CONFIG.MIDTERM_WEEKS.includes(G.week)) return { name: 'Midterms', css: 'midterms', demand: 1.3, diff: 1.2 };
+    if (G.week <= 2) return { name: 'Welcome Week', css: '', demand: 1.2, diff: 0.9 };
+    return { name: 'Regular', css: '', demand: 1.0, diff: 1.0 };
+}
+
+function getRepMsg(r) { return (REP_MSGS.find(m => r >= m.min && r <= m.max) || REP_MSGS[1]).msg; }
+function getFoodDesc(f) { return (FOOD_LEVELS.find(l => f >= l.min && f <= l.max) || FOOD_LEVELS[2]).desc; }
+function getPromoDesc(h) { return (PROMO_LEVELS[h] || PROMO_LEVELS[2]).desc; }
+function getPersonalDesc(p) { return (PERSONAL_LEVELS[p] || PERSONAL_LEVELS[1]).desc; }
+
+// ========== CHALLENGE SYSTEM ==========
+function rollChallenges() {
+    // 0-2 challenges, weighted toward 1
+    // ~25% chance 0, ~50% chance 1, ~25% chance 2
+    const r = Math.random();
+    let count = r < 0.25 ? 0 : (r < 0.75 ? 1 : 2);
+    const picked = [];
+    const pool = [...CHALLENGES];
+    for (let i = 0; i < count && pool.length > 0; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        picked.push(pool[idx]);
+        pool.splice(idx, 1);
+    }
+    return picked;
+}
+
+function canAffordOption(opt) {
+    const rem = getRemaining();
+    if (opt.cost.budget && rem.budget < opt.cost.budget) return false;
+    if (opt.cost.time && rem.time < opt.cost.time) return false;
+    if (opt.cost.energy && rem.energy < opt.cost.energy) return false;
+    return true;
+}
+
+function applyChallengeCost(opt) {
+    if (opt.cost.budget) G.budget -= opt.cost.budget;
+    if (opt.cost.time) G.time -= opt.cost.time;
+    if (opt.cost.energy) G.energy -= opt.cost.energy;
+    highlightsFromChallenges.push({ text: opt.resultText, type: 'challenge' });
+}
+
+// ========== ATTENDANCE & HAPPINESS ==========
+function calcAttendance(mods = {}) {
+    const ev = EVENT_TYPES[G.selectedEvent];
+    const ve = VENUES[G.selectedVenue];
+    const ph = getPhase();
+    let base = (ev.baseAppeal / 100) * ve.capacity;
+    base *= PROMO_LEVELS[G.promo].mult;
+    base *= 0.5 + (G.reputation / 100);
+    base *= 1 + (G.lastHappiness - 50) / 100;
+    base *= ph.demand;
+    if (ev.stressRelief && (ph.name === 'Midterms' || ph.name === 'Finals')) base *= 1.2;
+    base += G.regulars * 0.8;
+    if (mods.attendance) base *= mods.attendance;
+    if (mods.venueCapacity) base = Math.min(base, ve.capacity * (1 + mods.venueCapacity));
+    base *= 0.85 + Math.random() * 0.3;
+    let final = Math.round(Math.min(base, ve.capacity * 1.5));
+    final = Math.max(final, 3);
+    return { count: final, pct: Math.round(final / CONFIG.FIRST_YEAR_CLASS_SIZE * 100), crowded: final > ve.capacity * 1.2, ratio: final / ve.capacity, cap: ve.capacity };
+}
+
+function calcHappiness(att, mods = {}) {
+    const ev = EVENT_TYPES[G.selectedEvent];
+    const ve = VENUES[G.selectedVenue];
+    const ph = getPhase();
+    let h = 50;
+    const highlights = [];
+
+    // Food
+    const fl = FOOD_LEVELS.find(l => G.food >= l.min && G.food <= l.max);
+    const foodBonus = Math.round((fl.quality - 0.5) * 25);
+    h += foodBonus;
+    if (foodBonus >= 15) highlights.push({ text: 'Amazing food spread!', positive: true });
+    else if (foodBonus <= 0) highlights.push({ text: 'Students wanted more food.', positive: false });
+
+    // Venue vibe
+    h += ve.vibeBonus;
+    if (ve.vibeBonus >= 10) highlights.push({ text: 'Great venue atmosphere!', positive: true });
+
+    // Personal touches
+    h += PERSONAL_LEVELS[G.personal].bonus;
+    if (PERSONAL_LEVELS[G.personal].bonus >= 20) highlights.push({ text: 'Students felt personally welcomed.', positive: true });
+
+    // Stress relief bonus
+    if (ev.stressRelief && (ph.name === 'Midterms' || ph.name === 'Finals')) {
+        h += 10;
+        highlights.push({ text: 'Perfect stress relief!', positive: true });
+    }
+
+    // Crowding
+    if (att.crowded) {
+        const penalty = Math.round((att.ratio - 1.2) * 40 * (1 - ev.crowdTolerance));
+        h -= penalty;
+        if (penalty > 5) highlights.push({ text: 'Too crowded!', positive: false });
+    }
+
+    // Fill rate
+    if (att.ratio < 0.3) { h -= 15; highlights.push({ text: 'Low turnout.', positive: false }); }
+    else if (att.ratio >= 0.7 && att.ratio <= 1.1) { h += 5; highlights.push({ text: 'Perfect turnout!', positive: true }); }
+
+    // Persona matching
+    let personaBonus = 0;
+    let personaCount = 0;
+    G.weekCrowd.forEach(pid => {
+        const p = PERSONAS[pid];
+        if (p.likes.includes(G.selectedEvent)) { personaBonus += 8; personaCount++; }
+        else if (p.dislikes.includes(G.selectedEvent)) { personaBonus -= 6; }
+        // Foodie bonus for high food budget
+        if (p.foodSensitive && G.food >= 70) personaBonus += 5;
+    });
+    h += personaBonus;
+    if (personaCount >= 2) highlights.push({ text: 'Event matched the crowd perfectly!', positive: true });
+
+    // Phase difficulty
+    h = Math.round(h / ph.diff);
+
+    // Modifiers
+    if (mods.happiness) h += mods.happiness;
+    if (mods.weatherBad) { h -= 25; highlights.push({ text: 'Rain ruined the event.', positive: false }); }
+
+    return { score: Math.max(1, Math.min(100, h)), highlights };
+}
+
+function calcRepChange(att, hap, mods = {}) {
+    let change = Math.round((hap - 50) / 5);
+    if (att >= VENUES[G.selectedVenue].capacity * 0.8) change += 2;
+    if (mods.reputation) change += mods.reputation;
+    if (G.reputation > 80 && change > 0) change = Math.ceil(change * 0.5);
+    return { change, newRep: Math.max(0, Math.min(100, G.reputation + change)) };
+}
+
+function calcRegulars(att, hap, mods = {}) {
+    const kept = Math.round(G.regulars * CONFIG.REGULARS_RETENTION_RATE);
+    const factor = Math.max(0, (hap - 60) / 40);
+    const gained = Math.round(att * CONFIG.REGULARS_GROWTH_RATE * factor) + (mods.regulars || 0);
+    return { kept, gained, total: Math.min(kept + gained, 50) };
+}
+
+// ========== EVENT EXECUTION ==========
+function executeEvent(mods = {}) {
+    const costs = getCosts();
+    G.budget -= costs.budget;
+    G.time -= costs.time;
+    G.energy -= costs.energy;
+
+    const att = calcAttendance(mods);
+    const hap = calcHappiness(att, mods);
+    const rep = calcRepChange(att.count, hap.score, mods);
+    const reg = calcRegulars(att.count, hap.score, mods);
+
+    G.reputation = rep.newRep;
+    G.regulars = reg.total;
+    G.lastHappiness = hap.score;
+    G.totalAttendance += att.count;
+    G.totalHappiness += hap.score;
+    G.endedZeroEnergy = G.energy <= 0;
+
+    G.history.push({ week: G.week, event: G.selectedEvent, venue: G.selectedVenue, att: att.count, hap: hap.score, rep: rep.change });
+    save();
+
+    return { att, hap, rep, reg, mods };
+}
+
+function advanceWeek() {
+    G.week++;
+    if (G.week > CONFIG.TOTAL_WEEKS) return false;
+    const savings = Math.min(G.budget, CONFIG.MAX_SAVINGS);
+    G.budget = CONFIG.WEEKLY_BUDGET + savings;
+    G.time = CONFIG.WEEKLY_TIME;
+    G.energy = G.endedZeroEnergy ? CONFIG.WEEKLY_ENERGY - CONFIG.ENERGY_PENALTY : CONFIG.WEEKLY_ENERGY;
+    G.scoutPoints += CONFIG.WEEKLY_SCOUT_POINTS;
+    G.endedZeroEnergy = false;
+    G.selectedEvent = 'pizza_chill';
+    G.selectedVenue = 'common_room';
+    G.food = 30; G.promo = 2; G.personal = 1;
+    generateWeekCrowd();
+    save();
+    return true;
+}
+
+function calcFinalScore() {
+    const avgHap = Math.round(G.totalHappiness / CONFIG.TOTAL_WEEKS);
+    const attScore = Math.min(2000, G.totalAttendance * 2);
+    const hapScore = avgHap * 10;
+    const repScore = G.reputation * 5;
+    const regScore = Math.min(500, G.regulars * 17);
+    const personaScore = G.revealedPersonas.length * 50;
+    const total = attScore + hapScore + repScore + regScore + personaScore;
+    let rating;
+    if (total >= 3800) rating = 'Legendary Advisor';
+    else if (total >= 3200) rating = 'Beloved Leader';
+    else if (total >= 2600) rating = 'Campus Favorite';
+    else if (total >= 2000) rating = 'Respected Planner';
+    else if (total >= 1400) rating = 'Competent Organizer';
+    else rating = 'Learning Experience';
+    return { total, rating, avgHap, personasFound: G.revealedPersonas.length };
+}
+
+// ========== UI ==========
+const $ = id => document.getElementById(id);
+
+function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $('screen-' + name).classList.add('active');
+}
+
+function renderPlanning() {
+    $('current-week').textContent = G.week;
+    const ph = getPhase();
+    $('semester-phase').textContent = ph.name;
+    $('semester-phase').className = 'semester-phase ' + ph.css;
+    $('reputation-status').textContent = getRepMsg(G.reputation);
+
+    // Resources
+    const maxB = CONFIG.WEEKLY_BUDGET + CONFIG.MAX_SAVINGS;
+    $('budget-current').textContent = G.budget;
+    $('budget-max').textContent = maxB;
+    $('budget-bar').style.width = (G.budget / maxB * 100) + '%';
+    $('time-current').textContent = G.time;
+    $('time-bar').style.width = (G.time / CONFIG.WEEKLY_TIME * 100) + '%';
+    $('energy-current').textContent = G.energy;
+    $('energy-bar').style.width = (G.energy / CONFIG.WEEKLY_ENERGY * 100) + '%';
+    $('scout-current').textContent = G.scoutPoints;
+    $('scout-bar').style.width = Math.min(100, G.scoutPoints / 5 * 100) + '%';
+
+    renderPersonas();
+    renderEventTypes();
+    renderVenues();
+    renderSliders();
+    updateCosts();
+}
+
+function renderPersonas() {
+    const grid = $('personas-grid');
+    grid.innerHTML = '';
+    const allIds = Object.keys(PERSONAS);
+
+    allIds.forEach(pid => {
+        const p = PERSONAS[pid];
+        const revealed = G.revealedPersonas.includes(pid);
+        const inCrowd = G.weekCrowd.includes(pid);
+
+        const card = document.createElement('div');
+        card.className = 'persona-card ' + (revealed ? 'revealed' : 'hidden');
+
+        if (revealed && inCrowd) {
+            // Show if event matches
+            if (p.likes.includes(G.selectedEvent)) card.classList.add('match');
+            else if (p.dislikes.includes(G.selectedEvent)) card.classList.add('mismatch');
+        }
+
+        if (revealed) {
+            card.innerHTML = `
+                <div class="persona-icon">${p.icon}</div>
+                <div class="persona-name">${p.name}</div>
+                <div class="persona-pref">${inCrowd ? '★ Here this week' : ''}</div>
+            `;
+            card.title = p.prefText;
+        } else {
+            card.innerHTML = `
+                <div class="persona-icon">❓</div>
+                <div class="persona-name">Unknown</div>
+                <div class="scout-cost">Scout: ${CONFIG.SCOUT_COST} pt</div>
+            `;
+            if (G.scoutPoints >= CONFIG.SCOUT_COST) {
+                card.onclick = () => scoutPersona(pid);
+            }
+        }
+        grid.appendChild(card);
+    });
+
+    // Crowd hint
+    const knownInCrowd = G.weekCrowd.filter(id => G.revealedPersonas.includes(id));
+    const unknownCount = G.weekCrowd.length - knownInCrowd.length;
+    let hint = '';
+    if (knownInCrowd.length > 0) {
+        hint = knownInCrowd.map(id => PERSONAS[id].icon).join(' ') + ' are here';
+        if (unknownCount > 0) hint += ` + ${unknownCount} unknown`;
+    } else {
+        hint = `${G.weekCrowd.length} students (scout to learn more)`;
+    }
+    $('crowd-hint').textContent = hint;
+}
+
+function scoutPersona(pid) {
+    if (G.scoutPoints >= CONFIG.SCOUT_COST && !G.revealedPersonas.includes(pid)) {
+        G.scoutPoints -= CONFIG.SCOUT_COST;
+        G.revealedPersonas.push(pid);
+        save();
+        renderPlanning();
+    }
+}
+
+function renderEventTypes() {
+    const container = $('event-types');
+    container.innerHTML = '';
+    Object.values(EVENT_TYPES).forEach(ev => {
+        const card = document.createElement('div');
+        card.className = 'event-type-card' + (G.selectedEvent === ev.id ? ' selected' : '');
+
+        // Check persona appeal
+        const likes = G.weekCrowd.filter(pid => G.revealedPersonas.includes(pid) && PERSONAS[pid].likes.includes(ev.id)).length;
+        const dislikes = G.weekCrowd.filter(pid => G.revealedPersonas.includes(pid) && PERSONAS[pid].dislikes.includes(ev.id)).length;
+        let appealText = '';
+        if (likes > 0) appealText = `👍 ${likes} love this`;
+        else if (dislikes > 0) appealText = `👎 ${dislikes} dislike`;
+
+        card.innerHTML = `
+            <div class="event-type-icon">${ev.icon}</div>
+            <div class="event-type-name">${ev.name}</div>
+            <div class="event-type-cost">$${ev.baseCost} | ${ev.baseEnergy}⚡</div>
+            <div class="event-type-appeal">${appealText}</div>
+        `;
+        card.onclick = () => { G.selectedEvent = ev.id; renderPlanning(); };
+        container.appendChild(card);
+    });
+}
+
+function renderVenues() {
+    const container = $('venue-options');
+    container.innerHTML = '';
+    Object.values(VENUES).forEach(ve => {
+        const card = document.createElement('div');
+        card.className = 'venue-card' + (G.selectedVenue === ve.id ? ' selected' : '');
+        card.innerHTML = `
+            <div class="venue-header"><span class="venue-icon">${ve.icon}</span><span class="venue-name">${ve.name}</span></div>
+            <div class="venue-details">${ve.cost > 0 ? '$' + ve.cost : 'Free'} | Cap: ${ve.capacity}</div>
+            ${ve.weatherRisk ? '<div class="venue-warning">⚠️ Weather risk</div>' : ''}
+        `;
+        card.onclick = () => { G.selectedVenue = ve.id; renderPlanning(); };
+        container.appendChild(card);
+    });
+}
+
+function renderSliders() {
+    $('food-slider').value = G.food;
+    $('food-current').textContent = G.food;
+    $('food-description').textContent = getFoodDesc(G.food);
+    $('promotion-slider').value = G.promo;
+    $('promotion-current').textContent = G.promo;
+    $('promotion-description').textContent = getPromoDesc(G.promo);
+    $('personal-slider').value = G.personal;
+    $('personal-current').textContent = G.personal;
+    $('personal-description').textContent = getPersonalDesc(G.personal);
+}
+
+function updateCosts() {
+    const aff = canAfford();
+    $('total-budget-cost').textContent = '$' + aff.costs.budget;
+    $('total-time-cost').textContent = aff.costs.time + 'h';
+    $('total-energy-cost').textContent = aff.costs.energy;
+
+    document.querySelector('.resource-card.budget').classList.toggle('insufficient', !aff.budget);
+    document.querySelector('.resource-card.time').classList.toggle('insufficient', !aff.time);
+    document.querySelector('.resource-card.energy').classList.toggle('insufficient', !aff.energy);
+
+    const warnings = $('cost-warnings');
+    warnings.innerHTML = '';
+    if (!aff.budget) warnings.innerHTML += '<div class="cost-warning">Not enough budget!</div>';
+    if (!aff.time) warnings.innerHTML += '<div class="cost-warning">Not enough time!</div>';
+    if (!aff.energy) warnings.innerHTML += '<div class="cost-warning">Not enough energy!</div>';
+
+    $('btn-plan-event').disabled = !aff.ok;
+}
+
+// Challenge screen
+function showChallenge(challenge) {
+    $('challenge-icon').textContent = challenge.icon;
+    $('challenge-title').textContent = challenge.title;
+    $('challenge-description').textContent = challenge.description;
+
+    const container = $('challenge-choices');
+    container.innerHTML = '';
+    challenge.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'challenge-choice-btn';
+        const costParts = [];
+        if (opt.cost.budget) costParts.push('$' + opt.cost.budget);
+        if (opt.cost.time) costParts.push(opt.cost.time + 'h');
+        if (opt.cost.energy) costParts.push(opt.cost.energy + '⚡');
+        btn.innerHTML = `<span class="choice-text">${opt.text}</span><span class="choice-cost">${costParts.join(' + ') || 'No extra cost'}</span>`;
+        btn.disabled = !canAffordOption(opt);
+        btn.onclick = () => {
+            applyChallengeCost(opt);
+            processNextChallenge();
+        };
+        container.appendChild(btn);
+    });
+    showScreen('challenge');
+}
+
+function processNextChallenge() {
+    if (pendingChallenges.length > 0) {
+        showChallenge(pendingChallenges.shift());
+    } else {
+        checkRandomEvent();
+    }
+}
+
+// Random event
+function checkRandomEvent() {
+    if (Math.random() < CONFIG.RANDOM_EVENT_CHANCE) {
+        const eligible = RANDOM_EVENTS.filter(e => !e.condition || e.condition(G));
+        if (eligible.length > 0) {
+            const event = eligible[Math.floor(Math.random() * eligible.length)];
+            showRandomEvent(event);
+            return;
+        }
+    }
+    finishEvent();
+}
+
+function showRandomEvent(event) {
+    $('random-event-icon').textContent = event.icon;
+    $('random-event-title').textContent = event.title;
+    $('random-event-description').textContent = event.description;
+
+    const container = $('random-event-choices');
+    container.innerHTML = '';
+    event.choices.forEach((choice, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'random-choice-btn';
+        const costParts = [];
+        if (choice.cost.budget) costParts.push('$' + choice.cost.budget);
+        if (choice.cost.time) costParts.push(choice.cost.time + 'h');
+        if (choice.cost.energy) costParts.push(choice.cost.energy + '⚡');
+        btn.innerHTML = `<span class="choice-text">${choice.text}</span><span class="choice-cost">${costParts.length ? 'Cost: ' + costParts.join(', ') : 'No cost'}</span>`;
+        btn.onclick = () => {
+            if (choice.cost.budget) G.budget -= choice.cost.budget;
+            if (choice.cost.time) G.time -= choice.cost.time;
+            if (choice.cost.energy) G.energy -= choice.cost.energy;
+
+            const eff = { ...choice.effect };
+            if (eff.weatherRoll) {
+                if (Math.random() < 0.7) { eff.weatherBad = true; highlightsFromChallenges.push({ text: 'It rained!', type: 'negative' }); }
+                else { eff.happiness = 10; highlightsFromChallenges.push({ text: 'Weather held!', type: 'positive' }); }
+                delete eff.weatherRoll;
+            }
+            if (eff.budget > 0) G.budget += eff.budget;
+            if (choice.resultText) highlightsFromChallenges.push({ text: choice.resultText, type: 'challenge' });
+            Object.assign(eventModifiers, eff);
+            finishEvent();
+        };
+        container.appendChild(btn);
+    });
+    showScreen('random-event');
+}
+
+function finishEvent() {
+    const results = executeEvent(eventModifiers);
+    showResults(results);
+}
+
+function showResults(results) {
+    // Animate attendees
+    const container = $('attendees-animation');
+    container.innerHTML = '';
+    const icons = ['😊', '😄', '🙂', '😁', '🤗'];
+    const count = Math.min(results.att.count, 40);
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const span = document.createElement('span');
+            span.className = 'attendee-icon';
+            span.textContent = icons[Math.floor(Math.random() * icons.length)];
+            span.style.animationDelay = (i * 25) + 'ms';
+            container.appendChild(span);
+        }, i * 25);
+    }
+
+    $('result-attendance').textContent = results.att.count;
+    $('result-attendance-detail').textContent = results.att.pct + '% of class';
+    $('result-happiness').textContent = results.hap.score;
+    $('result-happiness').className = 'stat-value ' + (results.hap.score >= 70 ? '' : results.hap.score >= 50 ? 'medium' : 'low');
+
+    const repSign = results.rep.change >= 0 ? '+' : '';
+    $('result-reputation-change').textContent = repSign + results.rep.change;
+    $('result-reputation-change').className = 'stat-value ' + (results.rep.change > 0 ? 'positive' : results.rep.change < 0 ? 'negative' : '');
+
+    // Highlights
+    const list = $('event-highlights-list');
+    list.innerHTML = '';
+    highlightsFromChallenges.forEach(h => {
+        const li = document.createElement('li');
+        li.textContent = h.text;
+        li.className = h.type || '';
+        list.appendChild(li);
+    });
+    results.hap.highlights.forEach(h => {
+        const li = document.createElement('li');
+        li.textContent = h.text;
+        li.className = h.positive ? 'positive' : 'negative';
+        list.appendChild(li);
+    });
+
+    // Summary
+    const ev = EVENT_TYPES[G.selectedEvent];
+    let summary = results.hap.score >= 75 ? `Your ${ev.name} was a hit!` :
+                  results.hap.score >= 55 ? `The ${ev.name} went well.` :
+                  results.hap.score >= 40 ? `The ${ev.name} was okay.` : `The ${ev.name} struggled.`;
+    if (results.reg.gained > 0) summary += ` +${results.reg.gained} regulars!`;
+    $('results-summary').textContent = summary;
+
+    $('btn-next-week').textContent = G.week >= CONFIG.TOTAL_WEEKS ? 'Semester Summary' : 'Next Week';
+    showScreen('results');
+}
+
+function showSemesterEnd() {
+    const score = calcFinalScore();
+    $('final-score').textContent = score.total;
+    $('final-rating').textContent = score.rating;
+    $('total-attendance').textContent = G.totalAttendance;
+    $('avg-happiness').textContent = score.avgHap;
+    $('total-regulars').textContent = G.regulars;
+    $('personas-found').textContent = score.personasFound + '/6';
+
+    const grid = $('week-history-grid');
+    grid.innerHTML = '';
+    G.history.forEach(w => {
+        const card = document.createElement('div');
+        card.className = 'week-history-card ' + (w.hap >= 70 ? 'good' : w.hap >= 50 ? 'medium' : 'poor');
+        card.innerHTML = `<div class="week-history-number">W${w.week}</div><div class="week-history-happiness">${w.hap}</div>`;
+        card.title = `${EVENT_TYPES[w.event].name}\nAttendance: ${w.att}\nHappiness: ${w.hap}`;
+        grid.appendChild(card);
+    });
+
+    clearSave();
+    showScreen('semester-end');
+}
+
+// Event handlers
+function handlePlanEvent() {
+    pendingChallenges = rollChallenges();
+    eventModifiers = {};
+    highlightsFromChallenges = [];
+
+    if (pendingChallenges.length > 0) {
+        showChallenge(pendingChallenges.shift());
+    } else {
+        checkRandomEvent();
+    }
+}
+
+function handleNextWeek() {
+    if (G.week >= CONFIG.TOTAL_WEEKS) {
+        showSemesterEnd();
+    } else {
+        advanceWeek();
+        showScreen('planning');
+        renderPlanning();
+    }
+}
+
+// Init
+function init() {
+    $('btn-new-game').onclick = () => { newGame(); showScreen('planning'); renderPlanning(); };
+    $('btn-continue').onclick = () => { if (load()) { showScreen('planning'); renderPlanning(); } };
+    $('btn-continue').disabled = !hasSave();
+
+    $('food-slider').oninput = e => { G.food = +e.target.value; renderSliders(); updateCosts(); };
+    $('promotion-slider').oninput = e => { G.promo = +e.target.value; renderSliders(); updateCosts(); };
+    $('personal-slider').oninput = e => { G.personal = +e.target.value; renderSliders(); updateCosts(); };
+
+    $('btn-plan-event').onclick = handlePlanEvent;
+    $('btn-next-week').onclick = handleNextWeek;
+    $('btn-play-again').onclick = () => { showScreen('title'); $('btn-continue').disabled = !hasSave(); };
+
+    showScreen('title');
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+</script>
+</body>
+</html>
