@@ -94,7 +94,9 @@ body {
 .resource-card.time .resource-bar { background: linear-gradient(90deg, var(--time-color), #5DADE2); }
 .resource-card.energy .resource-bar { background: linear-gradient(90deg, var(--energy-color), #F4D03F); }
 .resource-card.scout .resource-bar { background: linear-gradient(90deg, var(--scout-color), #BB8FCE); }
+.resource-card.relationships .resource-bar { background: linear-gradient(90deg, #E91E63, #FF6B9D); }
 .resource-value { font-size: 0.8rem; color: var(--text-medium); }
+.relationships-trend { font-size: 0.7rem; }
 .resource-card.insufficient .resource-bar { background: var(--danger) !important; }
 .resource-card.insufficient .resource-value { color: var(--danger); font-weight: 600; }
 
@@ -264,7 +266,8 @@ body {
                     <ul class="feature-list">
                         <li>🎯 6 student personas to discover and please</li>
                         <li>💰 $900 budget for the entire semester - spend wisely!</li>
-                        <li>🔍 Scout points to uncover student preferences</li>
+                        <li>💜 Build relationships through personal touches (they decay!)</li>
+                        <li>🏛️ Venues with distance/staleness tradeoffs</li>
                     </ul>
                 </div>
                 <div class="title-buttons">
@@ -321,6 +324,14 @@ body {
                             <span class="resource-name">Scout Points</span>
                             <div class="resource-bar-container"><div class="resource-bar" id="scout-bar"></div></div>
                             <span class="resource-value"><span id="scout-current">2</span> pts</span>
+                        </div>
+                    </div>
+                    <div class="resource-card relationships">
+                        <div class="resource-icon">💜</div>
+                        <div class="resource-info">
+                            <span class="resource-name">Relationships</span>
+                            <div class="resource-bar-container"><div class="resource-bar" id="relationships-bar"></div></div>
+                            <span class="resource-value"><span id="relationships-current">0</span>/30 <span id="relationships-trend"></span></span>
                         </div>
                     </div>
                 </div>
@@ -588,11 +599,11 @@ const FOOD_LEVELS = [
 ];
 
 const PERSONAL_LEVELS = [
-    { pts: 0, desc: 'No engagement', bonus: 0 },
-    { pts: 1, desc: 'Remember a few names', bonus: 5 },
-    { pts: 2, desc: 'Follow up with regulars', bonus: 12 },
-    { pts: 3, desc: 'Personal welcomes', bonus: 20 },
-    { pts: 4, desc: 'Deep connections', bonus: 30 }
+    { pts: 0, desc: 'No relationship building', relMult: 0 },
+    { pts: 1, desc: 'Remember a few names (+1 rel)', relMult: 1 },
+    { pts: 2, desc: 'Chat with attendees (+2 rel)', relMult: 2 },
+    { pts: 3, desc: 'Personal welcomes (+3 rel)', relMult: 3 },
+    { pts: 4, desc: 'Deep connections (+4 rel)', relMult: 4 }
 ];
 
 const REP_MSGS = [
@@ -618,6 +629,8 @@ function newGame() {
         weekCrowd: [], // Generated each week
         // Track venue usage for staleness (counts per venue)
         venueUsage: { common_room: 0, campus_cafe: 0, outdoor_quad: 0, student_union: 0, off_campus_park: 0 },
+        // Relationships: builds with personal touches, decays without maintenance
+        relationships: 0,
         history: [], totalAttendance: 0, totalHappiness: 0, endedZeroEnergy: false
     };
     generateWeekCrowd();
@@ -721,6 +734,10 @@ function calcAttendance(mods = {}) {
     if (ev.stressRelief && (ph.name === 'Midterms' || ph.name === 'Finals')) base *= 1.2;
     base += G.regulars * 0.5;
 
+    // Relationships boost - people come because they like you
+    const relationships = G.relationships || 0;
+    base += relationships * 0.15;
+
     // Distance penalty - some students won't walk far
     // distance 0 = no drop, 1 = 10% drop, 2 = 25% drop
     const distanceMult = ve.distance === 0 ? 1.0 : (ve.distance === 1 ? 0.9 : 0.75);
@@ -778,9 +795,13 @@ function calcHappiness(att, mods = {}) {
         highlights.push({ text: 'Committed crowd made the trek!', positive: true });
     }
 
-    // Personal touches
-    h += PERSONAL_LEVELS[G.personal].bonus;
-    if (PERSONAL_LEVELS[G.personal].bonus >= 20) highlights.push({ text: 'Students felt personally welcomed.', positive: true });
+    // Relationships bonus - built up over time through personal touches
+    const relationships = G.relationships || 0;
+    const relationshipBonus = Math.round(relationships * 0.8);  // Up to 24 bonus at max relationships
+    h += relationshipBonus;
+    if (relationships >= 20) highlights.push({ text: 'Strong relationships paying off!', positive: true });
+    else if (relationships >= 10) highlights.push({ text: 'Students recognize you.', positive: true });
+    else if (relationships < 5 && G.week > 3) highlights.push({ text: 'Students don\'t know you yet.', positive: false });
 
     // Stress relief bonus
     if (ev.stressRelief && (ph.name === 'Midterms' || ph.name === 'Finals')) {
@@ -857,14 +878,19 @@ function executeEvent(mods = {}) {
     G.totalHappiness += hap.score;
     G.endedZeroEnergy = G.energy <= 0;
 
+    // Build relationships based on personal touches and attendance
+    // More personal effort + more attendees = more relationship building
+    const relationshipGain = Math.round(G.personal * (att.count / 10));
+    G.relationships = Math.min(CONFIG.BUILDING_STUDENTS, (G.relationships || 0) + relationshipGain);
+
     // Track venue usage for staleness mechanic
     if (!G.venueUsage) G.venueUsage = {};
     G.venueUsage[G.selectedVenue] = (G.venueUsage[G.selectedVenue] || 0) + 1;
 
-    G.history.push({ week: G.week, event: G.selectedEvent, venue: G.selectedVenue, att: att.count, hap: hap.score, rep: rep.change });
+    G.history.push({ week: G.week, event: G.selectedEvent, venue: G.selectedVenue, att: att.count, hap: hap.score, rep: rep.change, relGain: relationshipGain });
     save();
 
-    return { att, hap, rep, reg, mods };
+    return { att, hap, rep, reg, mods, relationshipGain };
 }
 
 function advanceWeek() {
@@ -874,6 +900,11 @@ function advanceWeek() {
     G.time = CONFIG.WEEKLY_TIME;
     G.energy = G.endedZeroEnergy ? CONFIG.WEEKLY_ENERGY - CONFIG.ENERGY_PENALTY : CONFIG.WEEKLY_ENERGY;
     G.scoutPoints += CONFIG.WEEKLY_SCOUT_POINTS;
+
+    // Relationships decay ~20% each week if not maintained
+    // This means you need to keep investing personal touches to maintain them
+    G.relationships = Math.max(0, Math.round((G.relationships || 0) * 0.8));
+
     G.endedZeroEnergy = false;
     G.selectedEvent = 'pizza_chill';
     G.selectedVenue = 'common_room';
@@ -892,7 +923,8 @@ function calcFinalScore() {
     const regScore = Math.min(300, G.regulars * 10);
     const personaScore = G.revealedPersonas.length * 50;
     const budgetBonus = Math.round(G.budget / 10);  // Bonus for unspent budget
-    const total = attScore + hapScore + repScore + regScore + personaScore + budgetBonus;
+    const relationshipScore = (G.relationships || 0) * 8;  // Bonus for final relationships
+    const total = attScore + hapScore + repScore + regScore + personaScore + budgetBonus + relationshipScore;
     let rating;
     if (total >= 2200) rating = 'Legendary Advisor';
     else if (total >= 1800) rating = 'Beloved Leader';
@@ -928,6 +960,15 @@ function renderPlanning() {
     $('energy-bar').style.width = (G.energy / CONFIG.WEEKLY_ENERGY * 100) + '%';
     $('scout-current').textContent = G.scoutPoints;
     $('scout-bar').style.width = Math.min(100, G.scoutPoints / 5 * 100) + '%';
+
+    // Relationships display
+    const relationships = G.relationships || 0;
+    $('relationships-current').textContent = relationships;
+    $('relationships-bar').style.width = (relationships / CONFIG.BUILDING_STUDENTS * 100) + '%';
+    // Show decay warning if not investing in personal touches
+    const willDecay = Math.round(relationships * 0.2);
+    $('relationships-trend').textContent = willDecay > 0 ? `(-${willDecay} next week)` : '';
+    $('relationships-trend').style.color = willDecay > 2 ? 'var(--danger)' : 'var(--text-light)';
 
     renderPersonas();
     renderEventTypes();
@@ -1217,12 +1258,21 @@ function showResults(results) {
         list.appendChild(li);
     });
 
+    // Add relationship gain to highlights
+    if (results.relationshipGain > 0) {
+        const li = document.createElement('li');
+        li.textContent = `Built ${results.relationshipGain} relationship${results.relationshipGain > 1 ? 's' : ''} 💜`;
+        li.className = 'positive';
+        list.appendChild(li);
+    }
+
     // Summary
     const ev = EVENT_TYPES[G.selectedEvent];
     let summary = results.hap.score >= 75 ? `Your ${ev.name} was a hit!` :
                   results.hap.score >= 55 ? `The ${ev.name} went well.` :
                   results.hap.score >= 40 ? `The ${ev.name} was okay.` : `The ${ev.name} struggled.`;
     if (results.reg.gained > 0) summary += ` +${results.reg.gained} regulars!`;
+    if (results.relationshipGain > 0) summary += ` +${results.relationshipGain} relationships!`;
     $('results-summary').textContent = summary;
 
     $('btn-next-week').textContent = G.week >= CONFIG.TOTAL_WEEKS ? 'Semester Summary' : 'Next Week';
