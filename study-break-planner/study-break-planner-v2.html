@@ -258,10 +258,10 @@ body {
                 <h1>📚 Study Break Planner</h1>
                 <p class="subtitle">A Student Advisor Simulation - v2</p>
                 <div class="title-description">
-                    <p>Plan weekly study breaks for first-year students. Manage resources, learn student preferences, and handle unexpected challenges!</p>
+                    <p>Plan weekly study breaks for the 30 students in your residence hall. Manage a $900 semester budget, learn student preferences, and handle unexpected challenges!</p>
                     <ul class="feature-list">
                         <li>🎯 6 student personas to discover and please</li>
-                        <li>⚡ Resource trade-off challenges during events</li>
+                        <li>💰 $900 budget for the entire semester - spend wisely!</li>
                         <li>🔍 Scout points to uncover student preferences</li>
                     </ul>
                 </div>
@@ -292,7 +292,7 @@ body {
                     <div class="resource-card budget">
                         <div class="resource-icon">💰</div>
                         <div class="resource-info">
-                            <span class="resource-name">Budget</span>
+                            <span class="resource-name">Semester Budget</span>
                             <div class="resource-bar-container"><div class="resource-bar" id="budget-bar"></div></div>
                             <span class="resource-value">$<span id="budget-current">150</span>/<span id="budget-max">200</span></span>
                         </div>
@@ -468,10 +468,12 @@ body {
 <script>
 // ========== CONFIG ==========
 const CONFIG = {
-    TOTAL_WEEKS: 12, FIRST_YEAR_CLASS_SIZE: 500, WEEKLY_BUDGET: 150, MAX_SAVINGS: 50,
+    TOTAL_WEEKS: 12,
+    BUILDING_STUDENTS: 30,           // 30 students in the building
+    SEMESTER_BUDGET: 900,            // $900 for the whole semester (30 × $30)
     WEEKLY_TIME: 8, WEEKLY_ENERGY: 10, ENERGY_PENALTY: 3, RANDOM_EVENT_CHANCE: 0.25,
     REPUTATION_MIN: 0, REPUTATION_MAX: 100, REPUTATION_START: 50,
-    REGULARS_GROWTH_RATE: 0.15, REGULARS_RETENTION_RATE: 0.85,
+    REGULARS_GROWTH_RATE: 0.2, REGULARS_RETENTION_RATE: 0.85,
     MIDTERM_WEEKS: [4, 5, 9, 10], FINALS_WEEK: 12,
     WEEKLY_SCOUT_POINTS: 1, STARTING_SCOUT_POINTS: 2, SCOUT_COST: 1
 };
@@ -497,9 +499,9 @@ const EVENT_TYPES = {
 };
 
 const VENUES = {
-    common_room: { id: 'common_room', name: 'Common Room', icon: '🏠', cost: 0, capacity: 30, vibeBonus: 0, weatherRisk: false },
-    reserved_lounge: { id: 'reserved_lounge', name: 'Reserved Lounge', icon: '🛋️', cost: 25, capacity: 50, vibeBonus: 10, weatherRisk: false },
-    outdoor_quad: { id: 'outdoor_quad', name: 'Outdoor Quad', icon: '🌳', cost: 0, capacity: 100, vibeBonus: 5, weatherRisk: true }
+    common_room: { id: 'common_room', name: 'Common Room', icon: '🏠', cost: 0, capacity: 15, vibeBonus: 0, weatherRisk: false },
+    reserved_lounge: { id: 'reserved_lounge', name: 'Reserved Lounge', icon: '🛋️', cost: 25, capacity: 25, vibeBonus: 10, weatherRisk: false },
+    outdoor_quad: { id: 'outdoor_quad', name: 'Outdoor Quad', icon: '🌳', cost: 0, capacity: 30, vibeBonus: 5, weatherRisk: true }
 };
 
 // ========== CHALLENGES (Resource Trade-offs) ==========
@@ -600,7 +602,7 @@ let highlightsFromChallenges = [];
 
 function newGame() {
     G = {
-        week: 1, budget: CONFIG.WEEKLY_BUDGET, time: CONFIG.WEEKLY_TIME, energy: CONFIG.WEEKLY_ENERGY,
+        week: 1, budget: CONFIG.SEMESTER_BUDGET, time: CONFIG.WEEKLY_TIME, energy: CONFIG.WEEKLY_ENERGY,
         scoutPoints: CONFIG.STARTING_SCOUT_POINTS, reputation: CONFIG.REPUTATION_START, regulars: 0,
         lastHappiness: 50, selectedEvent: 'pizza_chill', selectedVenue: 'common_room',
         food: 30, promo: 2, personal: 1,
@@ -701,19 +703,21 @@ function calcAttendance(mods = {}) {
     const ev = EVENT_TYPES[G.selectedEvent];
     const ve = VENUES[G.selectedVenue];
     const ph = getPhase();
-    let base = (ev.baseAppeal / 100) * ve.capacity;
+    // Base attendance calculation for 30-student building
+    let base = (ev.baseAppeal / 100) * Math.min(ve.capacity, CONFIG.BUILDING_STUDENTS);
     base *= PROMO_LEVELS[G.promo].mult;
     base *= 0.5 + (G.reputation / 100);
     base *= 1 + (G.lastHappiness - 50) / 100;
     base *= ph.demand;
     if (ev.stressRelief && (ph.name === 'Midterms' || ph.name === 'Finals')) base *= 1.2;
-    base += G.regulars * 0.8;
+    base += G.regulars * 0.5;
     if (mods.attendance) base *= mods.attendance;
     if (mods.venueCapacity) base = Math.min(base, ve.capacity * (1 + mods.venueCapacity));
     base *= 0.85 + Math.random() * 0.3;
-    let final = Math.round(Math.min(base, ve.capacity * 1.5));
-    final = Math.max(final, 3);
-    return { count: final, pct: Math.round(final / CONFIG.FIRST_YEAR_CLASS_SIZE * 100), crowded: final > ve.capacity * 1.2, ratio: final / ve.capacity, cap: ve.capacity };
+    // Cap at building capacity
+    let final = Math.round(Math.min(base, CONFIG.BUILDING_STUDENTS));
+    final = Math.max(final, 2);
+    return { count: final, pct: Math.round(final / CONFIG.BUILDING_STUDENTS * 100), crowded: final > ve.capacity * 1.2, ratio: final / ve.capacity, cap: ve.capacity };
 }
 
 function calcHappiness(att, mods = {}) {
@@ -790,7 +794,8 @@ function calcRegulars(att, hap, mods = {}) {
     const kept = Math.round(G.regulars * CONFIG.REGULARS_RETENTION_RATE);
     const factor = Math.max(0, (hap - 60) / 40);
     const gained = Math.round(att * CONFIG.REGULARS_GROWTH_RATE * factor) + (mods.regulars || 0);
-    return { kept, gained, total: Math.min(kept + gained, 50) };
+    // Max regulars capped at building size
+    return { kept, gained, total: Math.min(kept + gained, CONFIG.BUILDING_STUDENTS) };
 }
 
 // ========== EVENT EXECUTION ==========
@@ -821,8 +826,7 @@ function executeEvent(mods = {}) {
 function advanceWeek() {
     G.week++;
     if (G.week > CONFIG.TOTAL_WEEKS) return false;
-    const savings = Math.min(G.budget, CONFIG.MAX_SAVINGS);
-    G.budget = CONFIG.WEEKLY_BUDGET + savings;
+    // Budget persists across semester - no refresh!
     G.time = CONFIG.WEEKLY_TIME;
     G.energy = G.endedZeroEnergy ? CONFIG.WEEKLY_ENERGY - CONFIG.ENERGY_PENALTY : CONFIG.WEEKLY_ENERGY;
     G.scoutPoints += CONFIG.WEEKLY_SCOUT_POINTS;
@@ -837,18 +841,20 @@ function advanceWeek() {
 
 function calcFinalScore() {
     const avgHap = Math.round(G.totalHappiness / CONFIG.TOTAL_WEEKS);
-    const attScore = Math.min(2000, G.totalAttendance * 2);
+    // Scoring adjusted for 30-student building
+    const attScore = Math.min(600, G.totalAttendance * 3);  // Max ~200 attendance * 3
     const hapScore = avgHap * 10;
     const repScore = G.reputation * 5;
-    const regScore = Math.min(500, G.regulars * 17);
+    const regScore = Math.min(300, G.regulars * 10);
     const personaScore = G.revealedPersonas.length * 50;
-    const total = attScore + hapScore + repScore + regScore + personaScore;
+    const budgetBonus = Math.round(G.budget / 10);  // Bonus for unspent budget
+    const total = attScore + hapScore + repScore + regScore + personaScore + budgetBonus;
     let rating;
-    if (total >= 3800) rating = 'Legendary Advisor';
-    else if (total >= 3200) rating = 'Beloved Leader';
-    else if (total >= 2600) rating = 'Campus Favorite';
-    else if (total >= 2000) rating = 'Respected Planner';
-    else if (total >= 1400) rating = 'Competent Organizer';
+    if (total >= 2200) rating = 'Legendary Advisor';
+    else if (total >= 1800) rating = 'Beloved Leader';
+    else if (total >= 1400) rating = 'Hall Favorite';
+    else if (total >= 1000) rating = 'Respected Planner';
+    else if (total >= 700) rating = 'Competent Organizer';
     else rating = 'Learning Experience';
     return { total, rating, avgHap, personasFound: G.revealedPersonas.length };
 }
@@ -868,11 +874,10 @@ function renderPlanning() {
     $('semester-phase').className = 'semester-phase ' + ph.css;
     $('reputation-status').textContent = getRepMsg(G.reputation);
 
-    // Resources
-    const maxB = CONFIG.WEEKLY_BUDGET + CONFIG.MAX_SAVINGS;
+    // Resources - semester budget
     $('budget-current').textContent = G.budget;
-    $('budget-max').textContent = maxB;
-    $('budget-bar').style.width = (G.budget / maxB * 100) + '%';
+    $('budget-max').textContent = CONFIG.SEMESTER_BUDGET;
+    $('budget-bar').style.width = (G.budget / CONFIG.SEMESTER_BUDGET * 100) + '%';
     $('time-current').textContent = G.time;
     $('time-bar').style.width = (G.time / CONFIG.WEEKLY_TIME * 100) + '%';
     $('energy-current').textContent = G.energy;
@@ -1125,7 +1130,7 @@ function showResults(results) {
     }
 
     $('result-attendance').textContent = results.att.count;
-    $('result-attendance-detail').textContent = results.att.pct + '% of class';
+    $('result-attendance-detail').textContent = results.att.pct + '% of building';
     $('result-happiness').textContent = results.hap.score;
     $('result-happiness').className = 'stat-value ' + (results.hap.score >= 70 ? '' : results.hap.score >= 50 ? 'medium' : 'low');
 
