@@ -505,7 +505,7 @@ const CONFIG = {
     TOTAL_WEEKS: 12,
     BUILDING_STUDENTS: 30,           // 30 students in the building
     SEMESTER_BUDGET: 900,            // $900 for the whole semester (30 × $30)
-    WEEKLY_TIME: 8, WEEKLY_ENERGY: 10, ENERGY_PENALTY: 3, RANDOM_EVENT_CHANCE: 0.25,
+    WEEKLY_TIME: 8, WEEKLY_ENERGY: 10, ENERGY_PENALTY: 3, RANDOM_EVENT_CHANCE: 0.20,
     REPUTATION_MIN: 0, REPUTATION_MAX: 100, REPUTATION_START: 50,
     REGULARS_GROWTH_RATE: 0.2, REGULARS_RETENTION_RATE: 0.85,
     MIDTERM_WEEKS: [4, 5, 9, 10], FINALS_WEEK: 12,
@@ -712,10 +712,9 @@ function getPersonalDesc(p) { return (PERSONAL_LEVELS[p] || PERSONAL_LEVELS[1]).
 
 // ========== CHALLENGE SYSTEM ==========
 function rollChallenges() {
-    // 0-2 challenges, weighted toward 1
-    // ~25% chance 0, ~50% chance 1, ~25% chance 2
+    // Reduced frequency: ~70% chance 0, ~25% chance 1, ~5% chance 2
     const r = Math.random();
-    let count = r < 0.25 ? 0 : (r < 0.75 ? 1 : 2);
+    let count = r < 0.70 ? 0 : (r < 0.95 ? 1 : 2);
     const picked = [];
     const pool = [...CHALLENGES];
     for (let i = 0; i < count && pool.length > 0; i++) {
