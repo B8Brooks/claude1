@@ -157,6 +157,22 @@ body {
 .cost-warnings { margin-bottom: var(--spacing-md); }
 .cost-warning { background: rgba(231, 76, 60, 0.1); color: var(--danger); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: var(--spacing-xs); }
 
+/* Expected Attendance */
+.expected-attendance { background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(52, 152, 219, 0.05) 100%); border: 2px solid var(--info); border-radius: var(--radius-md); padding: var(--spacing-md); margin-bottom: var(--spacing-md); text-align: center; }
+.expected-header { font-size: 0.85rem; color: var(--text-medium); margin-bottom: var(--spacing-xs); }
+.expected-range { font-size: 1.5rem; font-weight: 700; color: var(--info); }
+.expected-confidence { font-size: 0.75rem; margin-top: var(--spacing-xs); }
+.expected-confidence.high { color: var(--success); }
+.expected-confidence.medium { color: var(--warning); }
+.expected-confidence.low { color: var(--text-light); }
+
+/* Persona commitment indicators */
+.persona-commitment { font-size: 0.7rem; margin-top: var(--spacing-xs); font-weight: 600; }
+.persona-commitment.committed { color: var(--success); }
+.persona-commitment.likely { color: #F1C40F; }
+.persona-commitment.maybe { color: var(--text-medium); }
+.persona-commitment.unlikely { color: var(--danger); }
+
 /* Challenge Screen */
 .challenge-container { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-xl); text-align: center; max-width: 500px; margin: 8vh auto 0; box-shadow: var(--shadow-lg); }
 .challenge-icon { font-size: 4rem; margin-bottom: var(--spacing-md); animation: shake 0.5s ease; }
@@ -399,6 +415,11 @@ body {
                     <div class="cost-row"><span>Budget:</span><span id="total-budget-cost">$0</span></div>
                     <div class="cost-row"><span>Time:</span><span id="total-time-cost">0h</span></div>
                     <div class="cost-row"><span>Energy:</span><span id="total-energy-cost">0</span></div>
+                </div>
+                <div class="expected-attendance" id="expected-attendance">
+                    <div class="expected-header">Expected Turnout</div>
+                    <div class="expected-range"><span id="expected-min">8</span>-<span id="expected-max">16</span> students</div>
+                    <div class="expected-confidence" id="expected-confidence">Low confidence (build relationships!)</div>
                 </div>
                 <div class="cost-warnings" id="cost-warnings"></div>
                 <button id="btn-plan-event" class="btn btn-primary btn-large">Run Event</button>
@@ -721,11 +742,15 @@ function applyChallengeCost(opt) {
 }
 
 // ========== ATTENDANCE & HAPPINESS ==========
-function calcAttendance(mods = {}) {
+
+// Calculate expected attendance RANGE (for planning phase - no randomness)
+function calcExpectedAttendance() {
     const ev = EVENT_TYPES[G.selectedEvent];
     const ve = VENUES[G.selectedVenue];
     const ph = getPhase();
-    // Base attendance calculation for 30-student building
+    const relationships = G.relationships || 0;
+
+    // Base expected attendance
     let base = (ev.baseAppeal / 100) * Math.min(ve.capacity, CONFIG.BUILDING_STUDENTS);
     base *= PROMO_LEVELS[G.promo].mult;
     base *= 0.5 + (G.reputation / 100);
@@ -733,24 +758,97 @@ function calcAttendance(mods = {}) {
     base *= ph.demand;
     if (ev.stressRelief && (ph.name === 'Midterms' || ph.name === 'Finals')) base *= 1.2;
     base += G.regulars * 0.5;
-
-    // Relationships boost - people come because they like you
-    const relationships = G.relationships || 0;
     base += relationships * 0.15;
 
-    // Distance penalty - some students won't walk far
-    // distance 0 = no drop, 1 = 10% drop, 2 = 25% drop
+    // Distance penalty
     const distanceMult = ve.distance === 0 ? 1.0 : (ve.distance === 1 ? 0.9 : 0.75);
     base *= distanceMult;
 
+    // Cap at building size
+    const expected = Math.round(Math.min(base, CONFIG.BUILDING_STUDENTS));
+
+    // Variance depends on relationships - high relationships = more predictable
+    // At 0 relationships: ±40% variance
+    // At 30 relationships: ±10% variance
+    const variancePct = 0.40 - (relationships / CONFIG.BUILDING_STUDENTS) * 0.30;
+    const variance = Math.round(expected * variancePct);
+
+    const min = Math.max(2, expected - variance);
+    const max = Math.min(CONFIG.BUILDING_STUDENTS, expected + variance);
+
+    return { expected, min, max, variance: variancePct, distanceDrop: ve.distance > 0 };
+}
+
+// Calculate per-persona commitment (for UI during planning)
+function calcPersonaCommitment(personaId) {
+    const p = PERSONAS[personaId];
+    const ev = EVENT_TYPES[G.selectedEvent];
+    const relationships = G.relationships || 0;
+    const isRevealed = G.revealedPersonas.includes(personaId);
+    const inCrowd = G.weekCrowd.includes(personaId);
+
+    if (!inCrowd) return { level: 'absent', icon: '', text: 'Not around this week' };
+    if (!isRevealed) return { level: 'unknown', icon: '❓', text: 'Unknown' };
+
+    // Base commitment from event match
+    let commitment = 50;
+    if (p.likes.includes(G.selectedEvent)) commitment += 35;
+    if (p.dislikes.includes(G.selectedEvent)) commitment -= 30;
+
+    // Relationships increase commitment
+    commitment += relationships * 1.5;
+
+    // Food bonus for foodie
+    if (p.foodSensitive && G.food >= 70) commitment += 15;
+
+    // Clamp and categorize
+    commitment = Math.max(0, Math.min(100, commitment));
+
+    if (commitment >= 80) return { level: 'committed', icon: '💚', text: 'Definitely coming' };
+    if (commitment >= 55) return { level: 'likely', icon: '💛', text: 'Probably coming' };
+    if (commitment >= 30) return { level: 'maybe', icon: '🤷', text: 'Maybe' };
+    return { level: 'unlikely', icon: '💔', text: 'Probably not' };
+}
+
+// Calculate ACTUAL attendance (execution phase - with randomness)
+function calcActualAttendance(expected, mods = {}) {
+    const ve = VENUES[G.selectedVenue];
+    const relationships = G.relationships || 0;
+
+    // Start with expected value
+    let base = expected.expected;
+
+    // Apply modifiers from random events/challenges
     if (mods.attendance) base *= mods.attendance;
     if (mods.venueCapacity) base = Math.min(base, ve.capacity * (1 + mods.venueCapacity));
-    base *= 0.85 + Math.random() * 0.3;
-    // Cap at building capacity
+
+    // Apply variance - relationships reduce randomness
+    // High relationships = result closer to expected
+    // Low relationships = more random swing
+    const variancePct = expected.variance;
+    const randomFactor = (Math.random() - 0.5) * 2; // -1 to 1
+    const swing = Math.round(base * variancePct * randomFactor);
+    base += swing;
+
+    // Cap and floor
     let final = Math.round(Math.min(base, CONFIG.BUILDING_STUDENTS));
-    final = Math.max(final, 2);
-    const distanceDrop = ve.distance > 0;
-    return { count: final, pct: Math.round(final / CONFIG.BUILDING_STUDENTS * 100), crowded: final > ve.capacity * 1.2, ratio: final / ve.capacity, cap: ve.capacity, distanceDrop };
+    final = Math.max(2, final);
+    final = Math.max(expected.min, Math.min(expected.max, final)); // Stay within range
+
+    // Determine if we beat or missed expectations
+    const vsExpected = final - expected.expected;
+
+    return {
+        count: final,
+        pct: Math.round(final / CONFIG.BUILDING_STUDENTS * 100),
+        crowded: final > ve.capacity * 1.2,
+        ratio: final / ve.capacity,
+        cap: ve.capacity,
+        distanceDrop: expected.distanceDrop,
+        expected: expected.expected,
+        vsExpected,
+        wasUnpredictable: Math.abs(vsExpected) > 3
+    };
 }
 
 function calcHappiness(att, mods = {}) {
@@ -860,13 +958,18 @@ function calcRegulars(att, hap, mods = {}) {
 }
 
 // ========== EVENT EXECUTION ==========
+// Store expected attendance for comparison in results
+let lastExpectedAttendance = null;
+
 function executeEvent(mods = {}) {
     const costs = getCosts();
     G.budget -= costs.budget;
     G.time -= costs.time;
     G.energy -= costs.energy;
 
-    const att = calcAttendance(mods);
+    // Two-phase attendance: use stored expected, calculate actual
+    const expected = lastExpectedAttendance || calcExpectedAttendance();
+    const att = calcActualAttendance(expected, mods);
     const hap = calcHappiness(att, mods);
     const rep = calcRepChange(att.count, hap.score, mods);
     const reg = calcRegulars(att.count, hap.score, mods);
@@ -887,10 +990,10 @@ function executeEvent(mods = {}) {
     if (!G.venueUsage) G.venueUsage = {};
     G.venueUsage[G.selectedVenue] = (G.venueUsage[G.selectedVenue] || 0) + 1;
 
-    G.history.push({ week: G.week, event: G.selectedEvent, venue: G.selectedVenue, att: att.count, hap: hap.score, rep: rep.change, relGain: relationshipGain });
+    G.history.push({ week: G.week, event: G.selectedEvent, venue: G.selectedVenue, att: att.count, hap: hap.score, rep: rep.change, relGain: relationshipGain, expected: expected.expected });
     save();
 
-    return { att, hap, rep, reg, mods, relationshipGain };
+    return { att, hap, rep, reg, mods, relationshipGain, expected };
 }
 
 function advanceWeek() {
@@ -986,6 +1089,7 @@ function renderPersonas() {
         const p = PERSONAS[pid];
         const revealed = G.revealedPersonas.includes(pid);
         const inCrowd = G.weekCrowd.includes(pid);
+        const commitment = calcPersonaCommitment(pid);
 
         const card = document.createElement('div');
         card.className = 'persona-card ' + (revealed ? 'revealed' : 'hidden');
@@ -997,16 +1101,24 @@ function renderPersonas() {
         }
 
         if (revealed) {
+            // Show commitment level for personas in this week's crowd
+            const commitmentHtml = inCrowd
+                ? `<div class="persona-commitment ${commitment.level}">${commitment.icon} ${commitment.text}</div>`
+                : '<div class="persona-pref" style="color: var(--text-light);">Not here this week</div>';
+
             card.innerHTML = `
                 <div class="persona-icon">${p.icon}</div>
                 <div class="persona-name">${p.name}</div>
-                <div class="persona-pref">${inCrowd ? '★ Here this week' : ''}</div>
+                ${commitmentHtml}
             `;
             card.title = p.prefText;
         } else {
+            // Hidden persona - show commitment indicator if in crowd
+            const hiddenCommit = inCrowd ? `<div class="persona-pref">❓ ${commitment.text}</div>` : '';
             card.innerHTML = `
                 <div class="persona-icon">❓</div>
                 <div class="persona-name">Unknown</div>
+                ${hiddenCommit}
                 <div class="scout-cost">Scout: ${CONFIG.SCOUT_COST} pt</div>
             `;
             if (G.scoutPoints >= CONFIG.SCOUT_COST) {
@@ -1016,13 +1128,17 @@ function renderPersonas() {
         grid.appendChild(card);
     });
 
-    // Crowd hint
+    // Crowd hint with commitment summary
     const knownInCrowd = G.weekCrowd.filter(id => G.revealedPersonas.includes(id));
     const unknownCount = G.weekCrowd.length - knownInCrowd.length;
     let hint = '';
     if (knownInCrowd.length > 0) {
-        hint = knownInCrowd.map(id => PERSONAS[id].icon).join(' ') + ' are here';
-        if (unknownCount > 0) hint += ` + ${unknownCount} unknown`;
+        const commitments = knownInCrowd.map(id => calcPersonaCommitment(id));
+        const committed = commitments.filter(c => c.level === 'committed').length;
+        const likely = commitments.filter(c => c.level === 'likely').length;
+        hint = `${committed > 0 ? committed + '💚 ' : ''}${likely > 0 ? likely + '💛 ' : ''}`;
+        if (unknownCount > 0) hint += `${unknownCount}❓`;
+        hint = hint.trim() || 'Check commitments below';
     } else {
         hint = `${G.weekCrowd.length} students (scout to learn more)`;
     }
@@ -1119,6 +1235,25 @@ function updateCosts() {
     document.querySelector('.resource-card.budget').classList.toggle('insufficient', !aff.budget);
     document.querySelector('.resource-card.time').classList.toggle('insufficient', !aff.time);
     document.querySelector('.resource-card.energy').classList.toggle('insufficient', !aff.energy);
+
+    // Calculate and display expected attendance
+    const expected = calcExpectedAttendance();
+    lastExpectedAttendance = expected; // Store for execution phase
+    $('expected-min').textContent = expected.min;
+    $('expected-max').textContent = expected.max;
+
+    // Confidence level based on variance
+    const confEl = $('expected-confidence');
+    if (expected.variance <= 0.15) {
+        confEl.textContent = '✓ High confidence (strong relationships)';
+        confEl.className = 'expected-confidence high';
+    } else if (expected.variance <= 0.25) {
+        confEl.textContent = '~ Medium confidence';
+        confEl.className = 'expected-confidence medium';
+    } else {
+        confEl.textContent = '? Low confidence (build relationships!)';
+        confEl.className = 'expected-confidence low';
+    }
 
     const warnings = $('cost-warnings');
     warnings.innerHTML = '';
@@ -1234,7 +1369,19 @@ function showResults(results) {
     }
 
     $('result-attendance').textContent = results.att.count;
-    $('result-attendance-detail').textContent = results.att.pct + '% of building';
+
+    // Show expected vs actual
+    const vsExpected = results.att.vsExpected;
+    let attendanceDetail = results.att.pct + '% of building';
+    if (vsExpected > 0) {
+        attendanceDetail = `+${vsExpected} vs expected! 🎉`;
+    } else if (vsExpected < 0) {
+        attendanceDetail = `${vsExpected} vs expected 😔`;
+    } else {
+        attendanceDetail = 'As expected';
+    }
+    $('result-attendance-detail').textContent = attendanceDetail;
+
     $('result-happiness').textContent = results.hap.score;
     $('result-happiness').className = 'stat-value ' + (results.hap.score >= 70 ? '' : results.hap.score >= 50 ? 'medium' : 'low');
 
@@ -1245,6 +1392,20 @@ function showResults(results) {
     // Highlights
     const list = $('event-highlights-list');
     list.innerHTML = '';
+
+    // Add attendance vs expected highlight
+    if (results.att.wasUnpredictable) {
+        const li = document.createElement('li');
+        if (vsExpected > 0) {
+            li.textContent = `Turnout exceeded expectations! (${results.att.expected} expected, ${results.att.count} came)`;
+            li.className = 'positive';
+        } else {
+            li.textContent = `Lower turnout than expected (${results.att.expected} expected, ${results.att.count} came)`;
+            li.className = 'negative';
+        }
+        list.appendChild(li);
+    }
+
     highlightsFromChallenges.forEach(h => {
         const li = document.createElement('li');
         li.textContent = h.text;
